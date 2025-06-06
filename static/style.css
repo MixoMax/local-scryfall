@@ -1,0 +1,264 @@
+/* Basic Reset & Body */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #151515; /* Scryfall's dark background */
+    color: #e8e8e8; /* Light text color */
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+a {
+    color: #8ab4f8; /* A common link color on dark themes, similar to Scryfall */
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Header */
+.site-header {
+    background-color: #222222; /* Dark gray for header */
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #383838;
+    min-height: 40px; /* Ensure header has some min height */
+}
+
+.logo-search-container {
+    display: flex;
+    align-items: center;
+    gap: 25px; /* Increased gap */
+    flex-grow: 1;
+}
+
+.site-title {
+    color: #ffffff;
+    font-size: 1.75em;
+    margin: 0;
+    font-weight: 300; /* Lighter font weight, similar to Scryfall */
+    white-space: nowrap; /* Prevent title from wrapping */
+}
+
+.search-bar-wrapper {
+    flex-grow: 1;
+    max-width: 800px; /* Max width for search bar */
+}
+
+.search-form {
+    display: flex;
+}
+
+#search {
+    flex-grow: 1;
+    padding: 10px 15px; /* Adjusted padding */
+    border-radius: 4px;
+    border: 1px solid #4a4a4a;
+    background-color: #2d2d2d; /* Slightly lighter input background */
+    color: #e8e8e8;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#search:focus {
+    border-color: #76a2d6;
+    box-shadow: 0 0 0 3px rgba(118, 162, 214, 0.25);
+}
+
+.header-nav {
+    display: flex;
+    gap: 18px; /* Gap between nav items */
+}
+
+.header-nav a {
+    color: #b0b0b0;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.header-nav a:hover {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Controls Toolbar */
+.controls-toolbar {
+    background-color: #1e1e1e;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #383838;
+    font-size: 0.875em; /* 14px if base is 16px */
+    color: #c0c0c0;
+    min-height: 28px; /* Ensure some min height */
+}
+
+.results-summary {
+    flex-shrink: 0; /* Prevent shrinking too much */
+    margin-right: auto; /* Push other elements to the right */
+}
+
+.display-options {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Gap between sort/view options */
+    margin: 0 20px; /* Spacing around options */
+}
+
+.display-options span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.display-options select {
+    background-color: #2f2f2f;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-size: 0.95em;
+    -webkit-appearance: none; /* Basic styling for select */
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c0c0c0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: .65em auto;
+    padding-right: 25px; /* Space for arrow */
+}
+
+
+
+/* Main Content & Card Grid */
+main {
+    padding: 20px;
+}
+
+.card-grid {
+    display: grid;
+    /* Scryfall card images are approx 244x340.
+       minmax allows responsive card sizes. */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px; /* Gap between cards */
+    justify-content: center;
+}
+
+.card-item {
+    /* Container for the image, allows for easier future styling if needed */
+}
+
+.card-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 9px; /* Scryfall cards have rounded corners */
+    display: block; /* Removes extra space below image */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+}
+
+.card-item img:hover {
+    transform: scale(1.025); /* Subtle zoom on hover */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+}
+
+/* Utility classes for messages */
+.no-results, .error-message {
+    text-align: center;
+    padding: 30px;
+    font-size: 1.1em;
+    color: #909090;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) { /* Adjust breakpoint for when controls start to feel cramped */
+    .display-options {
+        margin: 0 10px;
+        gap: 8px;
+    }
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+}
+
+
+@media (max-width: 768px) {
+    .site-header {
+        flex-direction: column;
+        align-items: flex-start; /* Align items to the start in column layout */
+        gap: 10px; /* Gap between logo/search and nav when stacked */
+    }
+
+    .logo-search-container {
+        width: 100%; /* Full width for logo and search */
+        gap: 15px;
+    }
+    
+    .search-bar-wrapper {
+        max-width: none; /* Allow search bar to fill */
+    }
+
+    .header-nav {
+        align-self: flex-start; /* Align nav to the start */
+        gap: 12px;
+        flex-wrap: wrap; /* Allow nav items to wrap */
+    }
+    .header-nav a {
+        font-size: 0.85em;
+    }
+
+    .controls-toolbar {
+        flex-direction: column; /* Stack controls vertically */
+        gap: 10px;
+        align-items: stretch; /* Make items take full width */
+        padding: 10px 15px;
+    }
+
+    .results-summary {
+        text-align: center;
+        margin-right: 0; /* Reset margin */
+    }
+    .display-options {
+        justify-content: center; /* Center items */
+        flex-wrap: wrap;
+    }
+
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Smaller cards on mobile */
+        gap: 12px;
+    }
+    main {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .site-title {
+        font-size: 1.5em;
+    }
+    #search {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+    .controls-toolbar {
+        font-size: 0.8em;
+    }
+    .display-options select {
+        font-size: 0.9em; /* Make controls text smaller */
+    }
+    .card-grid {
+        /* Show 2 cards per row on very small screens, or adjust minmax for 1-2 */
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+     main {
+        padding: 10px;
+    }
+}

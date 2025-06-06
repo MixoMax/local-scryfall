@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-search-container">
+            <h1 class="site-title"><a href="/">MyScryfall</a></h1>
+        </div>
+    </header>
+    <main>
+        <div id="card-container" class="card-grid">
+            <!-- Card details injected here -->
+        </div>
+    </main>
+
+    <script>
+        const cardName = "[CARD_NAME]"; // will be server side injected
+
+        function init() {
+            fetch("/api/v1/card/" + encodeURIComponent(cardName))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('card-container').innerHTML = `<h1>Error: ${data.error}</h1>`;
+                        return;
+                    }
+
+                    const card = data.card;
+                    document.title = card.name;
+
+                    const cardHtml = `
+                        <div class="card-item">
+                            <img src="/${card.img_file_name}" alt="${card.name}" title="${card.name}">
+                            <div class="card-details">
+                                <h2>${card.name}</h2>
+                                <p><strong>Mana Cost:</strong> ${card.mana_cost || "N/A"}</p>
+                                <p><strong>CMC:</strong> ${card.cmc || "N/A"}</p>
+                                <p><strong>Type:</strong> ${card.type_line || "N/A"}</p>
+                                <p><strong>Text:</strong> ${card.oracle_text || "N/A"}</p>
+                                <p><strong>Power:</strong> ${card.power || "N/A"}</p>
+                                <p><strong>Toughness:</strong> ${card.toughness || "N/A"}</p>
+                                <p><strong>Loyalty:</strong> ${card.loyalty || "N/A"}</p>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('card-container').innerHTML = cardHtml;
+                })
+                .catch(err => {
+                    console.error('Error fetching card:', err);
+                    document.getElementById('card-container').innerHTML = '<p class="error-message">An error occurred loading the card.</p>';
+                });
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
