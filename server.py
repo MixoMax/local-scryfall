@@ -73,6 +73,10 @@ async def get_card_page(card_name: str) -> HTMLResponse:
 
     return HTMLResponse(content=html_content)
 
+@app.get("/random")
+async def get_random_card_page() -> FileResponse:
+    return FileResponse("static/random.html")
+
 
 @app.get("/")
 @app.get("/{path:path}")

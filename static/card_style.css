@@ -1,0 +1,125 @@
+/* static/card_style.css */
+
+/* Main content area for the single card page */
+.single-card-page-content {
+    display: flex;
+    justify-content: center; /* Center the card-item container */
+    align-items: flex-start; /* Align to top if content is smaller than viewport */
+    padding: 20px;
+    margin-top: 20px; /* Space below the header */
+    box-sizing: border-box;
+}
+
+/* Styles for the .card-item container on the single card page */
+.single-card-page-content .card-item {
+    display: flex;
+    flex-direction: row; /* Image on left, details on right for wider screens */
+    background-color: #222222; /* Dark background for the card display area */
+    padding: 25px;
+    border-radius: 10px; /* Rounded corners for the container */
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.4); /* A bit more pronounced shadow */
+    max-width: 900px; /* Max width for the entire card item */
+    width: 100%; /* Ensure it takes up available space up to max-width */
+    gap: 30px; /* Space between image container and details */
+    align-items: flex-start; /* Align items to the top */
+    box-sizing: border-box;
+}
+
+/* Container for the card image */
+.single-card-page-content .card-image-container {
+    flex-basis: 300px; /* Suggested base width for the image area */
+    flex-shrink: 0;    /* Prevent this container from shrinking */
+    min-width: 220px;  /* Minimum width for smaller views before stacking */
+}
+
+/* Card image styles within the single card page */
+.single-card-page-content .card-item img {
+    width: 100%; /* Make image fill its container */
+    height: auto;
+    border-radius: 9px; /* Scryfall cards have rounded corners */
+    display: block;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* Consistent shadow from main page */
+    /* Override transitions/hovers from style.css if not desired for single view */
+    transition: none;
+}
+
+.single-card-page-content .card-item img:hover {
+    transform: none; /* Disable zoom effect from main page style */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); /* Keep base shadow */
+}
+
+/* Card details section */
+.single-card-page-content .card-details {
+    flex-grow: 1; /* Allow details section to take remaining space */
+    color: #e8e8e8; /* Light text color */
+    line-height: 1.6;
+}
+
+.single-card-page-content .card-details h2 {
+    font-size: 1.8em; /* Larger font size for card name */
+    color: #ffffff;
+    margin-top: 0; /* Remove default top margin */
+    margin-bottom: 15px;
+    font-weight: 400; /* Slightly bolder than site-title */
+    border-bottom: 1px solid #383838; /* Separator line */
+    padding-bottom: 10px;
+}
+
+.single-card-page-content .card-details p {
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.single-card-page-content .card-details p strong {
+    color: #b0b0b0; /* Slightly muted color for labels */
+    margin-right: 8px;
+}
+
+/* Responsive adjustments for the single card page */
+@media (max-width: 768px) {
+    .single-card-page-content {
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .single-card-page-content .card-item {
+        flex-direction: column; /* Stack image and details vertically */
+        align-items: center; /* Center items when stacked */
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .single-card-page-content .card-image-container {
+        flex-basis: auto; /* Allow image container to size naturally */
+        width: 100%;     /* Full width for image container */
+        max-width: 300px; /* Max width for image on smaller screens */
+    }
+
+    .single-card-page-content .card-details {
+        width: 100%; /* Full width for details when stacked */
+    }
+
+    .single-card-page-content .card-details h2 {
+        font-size: 1.6em;
+        text-align: center; /* Center title on smaller screens */
+    }
+}
+
+@media (max-width: 480px) {
+    .single-card-page-content {
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .single-card-page-content .card-item {
+        padding: 15px;
+    }
+
+    .single-card-page-content .card-details h2 {
+        font-size: 1.4em;
+    }
+
+    .single-card-page-content .card-details p {
+        font-size: 0.9em;
+    }
+}

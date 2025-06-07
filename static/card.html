@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="card_style.css">
 </head>
 <body>
     <header class="site-header">
@@ -13,7 +14,7 @@
         </div>
     </header>
     <main>
-        <div id="card-container" class="card-grid">
+        <div id="card-container" class="single-card-page-content">
             <!-- Card details injected here -->
         </div>
     </main>
@@ -35,7 +36,9 @@
 
                     const cardHtml = `
                         <div class="card-item">
-                            <img src="/${card.img_file_name}" alt="${card.name}" title="${card.name}">
+                            <div class="card-image-container">
+                                <img src="/${card.img_file_name}" alt="${card.name}" title="${card.name}">
+                            </div>
                             <div class="card-details">
                                 <h2>${card.name}</h2>
                                 <p><strong>Mana Cost:</strong> ${card.mana_cost || "N/A"}</p>
