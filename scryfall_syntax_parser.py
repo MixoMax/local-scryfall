@@ -10,6 +10,8 @@ def printd(debug_print: bool, *args, **kwargs):
         #TODO: log instead of printing (eventually)
         pass
 
+
+
 class Operator(Enum):
     EQUALS = "=" # checks equality (both numbers and strings)
 

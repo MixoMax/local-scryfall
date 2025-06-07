@@ -5,30 +5,32 @@ from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 import uvicorn
 import os
 import sys
-import sqlite3
+# import sqlite3
 import re
 from typing import Any, Dict, List, Union
 import random
+from scryfall_bulk_importer import load_data
 
 app = FastAPI()
 
-conn = sqlite3.connect("scryfall_new.db", check_same_thread=False)
-cur = conn.cursor()
+# conn = sqlite3.connect("scryfall_new.db", check_same_thread=False)
+# cur = conn.cursor()
 
-rows = cur.execute("SELECT * FROM cards").fetchall()
-keys = ["name", "mana_cost", "cmc", "type_line", "oracle_text", "power", "toughness", "loyalty", "img_file_name"]
-types = [str, str, int, str, str, int, int, int, str]
-ALL_CARDS = []
-for row in rows:
-    row_data = []
-    for i, key in enumerate(keys):
-        value = row[i]
-        try:
-            value = types[i](value)
-        except:
-            value = str(value)
-        row_data.append(value)
-    ALL_CARDS.append({key: value for key, value in zip(keys, row_data)})
+# rows = cur.execute("SELECT * FROM cards").fetchall()
+# keys = ["name", "mana_cost", "cmc", "type_line", "oracle_text", "power", "toughness", "loyalty", "img_file_name"]
+# types = [str, str, int, str, str, int, int, int, str]
+# ALL_CARDS = []
+# for row in rows:
+#     row_data = []
+#     for i, key in enumerate(keys):
+#         value = row[i]
+#         try:
+#             value = types[i](value)
+#         except:
+#             value = str(value)
+#         row_data.append(value)
+#     ALL_CARDS.append({key: value for key, value in zip(keys, row_data)})
+ALL_CARDS = load_data("./cards.json")
 
 
 

@@ -90,10 +90,10 @@
                 
                 // First 8 cards load immediately, rest are lazy loaded
                 if (index < 8) {
-                    cardImg.src = `/${card.img_file_name}`;
+                    cardImg.src = `/${card.file_name}`;
                 } else {
                     cardImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
-                    cardImg.dataset.src = `/${card.img_file_name}`;
+                    cardImg.dataset.src = `/${card.file_name}`;
                     imageObserver.observe(cardImg);
                 }
 
