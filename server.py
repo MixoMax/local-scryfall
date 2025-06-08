@@ -1,4 +1,4 @@
-from scryfall_syntax_parser import query_to_filter, apply_filters
+from scryfall_syntax_parser import query_to_filter, apply_filters, print_filters
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -38,7 +38,8 @@ ALL_CARDS = load_data("./cards.json")
 async def search_cards(q: str) -> Dict[str, Any]:
     """Search cards using Scryfall-like syntax."""
     try:
-        filters = query_to_filter(q)
+        filters = query_to_filter(q, debug_print=False)
+        print_filters(filters)
         filtered_cards = apply_filters(ALL_CARDS, filters)
         if not filtered_cards:
             return {"error": "No cards found matching the query"}
