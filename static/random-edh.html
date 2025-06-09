@@ -11,6 +11,9 @@
         .card-image { width: 150px; height: auto; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; transition: transform 0.2s ease-in-out; }
         .card-image:hover { transform: scale(1.05); border-color: #007bff; }
         .selected-commander { border: 3px solid gold; }
+        .card-image[selected="true"] { border: 3px solid #28a745; }
+        .card-image[selected="false"] { border: 3px solid black; }
+        #loading { display: none; }
         #loading, #error { text-align: center; font-size: 1.2em; margin-top: 20px; }
         #deck-list { list-style: none; padding: 0; }
         #deck-list li { background-color: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
@@ -28,10 +31,14 @@
         <!-- Commander images will be loaded here -->
     </div>
 
-    <h2>Step 2: Your Deck (100 Cards)</h2>
+    <p id="N_selected_cards">Selected Cards: <span id="selected-count">0</span></p>
+
+    <h2>Step 2: Your Deck (100 Choose 30)</h2>
     <div id="deck-display" class="container">
         <!-- Deck card images will be loaded here -->
     </div>
+
+    <button onclick="copyDecklist()">Copy Decklist</button>
 
     <script>
         const loadingDiv = document.getElementById('loading');
@@ -40,6 +47,14 @@
         const deckDisplayDiv = document.getElementById('deck-display');
 
         let selectedCommander = null;
+        
+        let n_selected_cards = 0;
+
+        function updateSelectedCount() {
+            const selectedCards = deckDisplayDiv.querySelectorAll('.card-image[selected="true"]');
+            n_selected_cards = selectedCards.length;
+            document.getElementById('selected-count').textContent = n_selected_cards;
+        }
 
         async function fetchJson(url) {
             try {
@@ -70,6 +85,16 @@
                 img.classList.add('card-image');
                 if (isCommanderSelection) {
                     img.addEventListener('click', () => handleCommanderSelection(card, img));
+                } else {
+                    img.setAttribute('selected', 'false');
+                    img.addEventListener('click', () => {
+                        updateSelectedCount();
+                        if (n_selected_cards >= 30 && img.getAttribute('selected') === 'false') {
+                            return;
+                        }
+                        img.setAttribute('selected', img.getAttribute('selected') === 'true' ? 'false' : 'true');
+                        updateSelectedCount();
+                    });
                 }
                 container.appendChild(img);
             });
@@ -139,6 +164,25 @@
             loadingDiv.style.display = 'none';
         }
 
+        function copyDecklist() {
+            if (!selectedCommander) {
+                alert("Please select a commander first.");
+                return;
+            }
+
+            let deckList = Array.from(deckDisplayDiv.querySelectorAll('.card-image[selected="true"]'))
+                .map(img => "1 " + img.alt)
+                .join('\n');
+
+            navigator.clipboard.writeText(deckList)
+                .then(() => {
+                    alert("Decklist copied to clipboard!");
+                })
+                .catch(err => {
+                    console.error('Failed to copy decklist:', err);
+                    alert("Failed to copy decklist. Please try again.");
+                });
+        }
         // Initialize the page on load
         initializePage();
     </script>
