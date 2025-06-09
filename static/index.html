@@ -15,6 +15,12 @@
                     <input type="text" id="search" name="q" placeholder="Search for cards... e.g., o:vigilance t:creature">
                 </form>
             </div>
+            <a href="/random" class="random-link">
+                <span class="random-text">Random Card</span>
+            </a>
+            <a href="/random-edh.html" class="random-link">
+                <span class="random-text">Random EDH Deck</span>
+            </a>
         </div>
     </header>
 
@@ -98,7 +104,7 @@
                 }
 
                 const cardLink = document.createElement('a');
-                cardLink.href = `/card/${encodeURIComponent(card.name)}`;
+                cardLink.href = `/card/${encodeURIComponent(card.safe_name)}`;
                 cardLink.appendChild(cardImg);
                 cardItem.appendChild(cardLink);
                 resultsDiv.appendChild(cardItem);

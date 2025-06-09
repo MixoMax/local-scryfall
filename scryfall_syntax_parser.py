@@ -25,19 +25,21 @@ class Operator(Enum):
     CONTAINS = "%="
 
 OPERATOR_SYMBOLS = {
-    "=": Operator.EQUALS,
-    ">": Operator.GREATER_THAN,
-    "<": Operator.LESS_THAN,
     ">=": Operator.GREATER_THAN_OR_EQUAL,
     "<=": Operator.LESS_THAN_OR_EQUAL,
     "%=": Operator.CONTAINS,
+    "=": Operator.EQUALS,
+    ">": Operator.GREATER_THAN,
+    "<": Operator.LESS_THAN,
     ":": Operator.CONTAINS
 }
 
 
 
+
 class Filter:
-    def __init__(self, key: str, value, operator: Operator = Operator.EQUALS):
+    def __init__(self, key: str, value, operator: Operator = Operator.EQUALS, debug_print: bool = False):
+        self.debug_print = debug_print
         self.key = key
         self.value = value
         self.operator = operator
@@ -58,14 +60,38 @@ class Filter:
                     raise ValueError(f"Unsupported operator for string comparison: {self.operator}")
         
         elif isinstance(item_value, list) and isinstance(self.value, str):
-            match self.operator:
-                case Operator.EQUALS:
-                    return self.value in item_value
-                case Operator.CONTAINS:
-                    return any(self.value.lower() in str(v).lower() for v in item_value)
-                case _:
-                    raise ValueError(f"Unsupported operator for list comparison: {self.operator}")
-        
+            if self.key == "colors" or self.key == "color_identity":
+                search_value = self.value.upper()
+                is_searching_for_colorless = "C" in search_value
+                search_value = [char for char in search_value if char != "C"]
+                match self.operator:
+                    case Operator.EQUALS:
+                        return set(search_value) == set(item_value)
+                    case Operator.CONTAINS:
+                        match self.key:
+                            case "color_identity":
+                                printd(self.debug_print, f"Checking color identity: {item_value} against {search_value}")
+                                return all([v in search_value for v in item_value])
+                            case "colors":
+                                printd(self.debug_print, f"Checking colors: {item_value} against {search_value}")
+                                return all(v in item_value for v in search_value) or (is_searching_for_colorless and len(item_value) == 0)
+                    case Operator.GREATER_THAN:
+                        return all(v in item_value for v in search_value) and len(item_value) > len(search_value)
+                    case Operator.LESS_THAN:
+                        return all([v in search_value for v in item_value]) and len(item_value) < len(search_value)
+                    case Operator.GREATER_THAN_OR_EQUAL:
+                        printd(self.debug_print, f"Checking greater than or equal: {item_value} against {search_value}")
+                        return (all(v in item_value for v in search_value) and len(item_value) > len(search_value)) or set(search_value) == set(item_value)
+                    case Operator.LESS_THAN_OR_EQUAL:
+                        printd(self.debug_print, f"Checking less than or equal: {item_value} against {search_value}")
+                        return (all(v in search_value for v in item_value) and len(item_value) < len(search_value)) or set(search_value) == set(item_value)
+            else:
+                match self.operator:
+                    case Operator.EQUALS | Operator.CONTAINS:
+                        return any(self.value.lower() in str(v).lower() for v in item_value)
+                    case Operator.GREATER_THAN | Operator.LESS_THAN | Operator.GREATER_THAN_OR_EQUAL | Operator.LESS_THAN_OR_EQUAL:
+                        raise ValueError(f"Unsupported operator for list comparison: {self.operator}")
+            
         elif isinstance(item_value, (int, float)) and isinstance(self.value, (int, float)):
             match self.operator:
                 case Operator.EQUALS:
@@ -158,7 +184,7 @@ KEY_SHORT_HANDS = { # key: short hands
     "toughness": ("tough", "to"),
     "loyalty": ("l", "loy"),
     "oracle_text": ("text", "o"),
-    "colors": ("col", "c"),
+    "colors": ("col", "c", "color"),
     "color_identity": ("col_id", "ci"),
     "released-at": ("release", "date")
 }
@@ -294,15 +320,22 @@ def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, Logi
                 
                 if key[0] == "-":
                     key = key[1:]
-                    f = LogicalFilter(LogicalOperator.NOT, [Filter(key, value, op)])
+                    for shorthand_key, shorthand_values in KEY_SHORT_HANDS.items():
+                        if key in shorthand_values:
+                            key = shorthand_key
+                            break
+                    f = LogicalFilter(LogicalOperator.NOT, [Filter(key, value, op, debug_print)])
                     if filters and isinstance(filters[-1], LogicalFilter):
                         filters[-1].add_filter(f)
                     else:
                         filters.append(f)
                 else:
-                    f = Filter(key, value, op)
+                    f = Filter(key, value, op, debug_print)
                     if filters and isinstance(filters[-1], LogicalFilter):
-                        filters[-1].add_filter(f)
+                        if filters[-1].operator != LogicalOperator.NOT:
+                            filters[-1].add_filter(f)
+                        else:
+                            filters.append(f)
                     else:
                         filters.append(f)
                 break
@@ -327,7 +360,7 @@ def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, Logi
                         filters.append(LogicalFilter(operator, [last_filter], debug_print))
             else:
                 # Assume it's a name filter
-                filters.append(Filter("name", value, Operator.CONTAINS))
+                filters.append(Filter("name", value, Operator.CONTAINS, debug_print))
                 
     if not filters:
         raise ValueError("No valid filters found in query")

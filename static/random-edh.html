@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random EDH Deck Builder</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #e8e8e8; }
+        h1, h2 { text-align: center; color: #e8e8e8; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .card-image { width: 150px; height: auto; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; transition: transform 0.2s ease-in-out; }
+        .card-image:hover { transform: scale(1.05); border-color: #007bff; }
+        .selected-commander { border: 3px solid gold; }
+        #loading, #error { text-align: center; font-size: 1.2em; margin-top: 20px; }
+        #deck-list { list-style: none; padding: 0; }
+        #deck-list li { background-color: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+    </style>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h1>Random EDH Deck Builder</h1>
+
+    <div id="loading">Loading...</div>
+    <div id="error" style="color: red;"></div>
+
+    <h2>Step 1: Choose your Commander</h2>
+    <div id="commander-selection" class="container">
+        <!-- Commander images will be loaded here -->
+    </div>
+
+    <h2>Step 2: Your Deck (100 Cards)</h2>
+    <div id="deck-display" class="container">
+        <!-- Deck card images will be loaded here -->
+    </div>
+
+    <script>
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const commanderSelectionDiv = document.getElementById('commander-selection');
+        const deckDisplayDiv = document.getElementById('deck-display');
+
+        let selectedCommander = null;
+
+        async function fetchJson(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (e) {
+                console.error("Fetch error:", e);
+                errorDiv.textContent = `Failed to fetch data: ${e.message}`;
+                throw e;
+            }
+        }
+
+        function displayCards(cards, container, isCommanderSelection) {
+            container.innerHTML = ''; // Clear previous cards
+            if (!cards || cards.length === 0) {
+                container.textContent = 'No cards found.';
+                return;
+            }
+            cards.forEach(card => {
+                const img = document.createElement('img');
+                img.src = "/" + card.file_name
+                img.alt = card.name;
+                img.title = card.name;
+                img.classList.add('card-image');
+                if (isCommanderSelection) {
+                    img.addEventListener('click', () => handleCommanderSelection(card, img));
+                }
+                container.appendChild(img);
+            });
+        }
+
+        async function handleCommanderSelection(commander, imgElement) {
+            if (selectedCommander) {
+                // If a commander is already selected, we can either allow re-selection or prevent it.
+                // Uncomment the next line to allow re-selection:
+                // return; 
+                
+                // If you want to prevent re-selection, just return here:
+                return;
+            }
+            selectedCommander = commander;
+            console.log("Commander selected:", selectedCommander);
+            errorDiv.textContent = ''; // Clear previous errors
+
+            // Highlight selected commander
+            document.querySelectorAll('#commander-selection .card-image').forEach(el => el.classList.remove('selected-commander'));
+            imgElement.classList.add('selected-commander');
+            
+            deckDisplayDiv.innerHTML = ''; // Clear previous deck
+            loadingDiv.textContent = 'Fetching deck cards...';
+            loadingDiv.style.display = 'block';
+
+            const colorIdentity = commander.color_identity;
+            let deckQuery = '';
+
+            if (!colorIdentity || colorIdentity.length === 0) {
+                // For a colorless commander, "any subset of that color identity" means only colorless cards.
+                // The query for colorless cards is typically 'ci:C' or 'is:colorless'.
+                deckQuery = 'ci:C';
+            } else {
+                deckQuery = "ci:" + colorIdentity.join("");
+            }
+            
+            try {
+                const data = await fetchJson(`/api/v1/random?q=${encodeURIComponent("f:commander " + deckQuery + " AND -t=Land AND -t=Stickers AND -t:Attraction")}&count=100`);
+                displayCards(data.cards, deckDisplayDiv, false);
+            } catch (e) {
+                // Error already handled by fetchJson
+            }
+            loadingDiv.style.display = 'none';
+        }
+
+        async function initializePage() {
+            loadingDiv.textContent = 'Fetching commanders...';
+            loadingDiv.style.display = 'block';
+            errorDiv.textContent = '';
+            commanderSelectionDiv.innerHTML = '';
+            deckDisplayDiv.innerHTML = '';
+
+            try {
+                const data = await fetchJson('/api/v1/random?q=' + encodeURIComponent('f:commander t:creature t:legendary') + '&count=5');
+                if (data.cards && data.cards.length > 0) {
+                    displayCards(data.cards, commanderSelectionDiv, true);
+                } else if (data.card) { // Single card returned
+                    displayCards([data.card], commanderSelectionDiv, true);
+                }
+                else {
+                    errorDiv.textContent = 'No commanders found.';
+                }
+            } catch (e) {
+                // Error already handled by fetchJson
+            }
+            loadingDiv.style.display = 'none';
+        }
+
+        // Initialize the page on load
+        initializePage();
+    </script>
+</body>
+</html>

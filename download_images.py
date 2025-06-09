@@ -6,17 +6,23 @@ import threading
 import queue
 import os
 
-NOT_ALLOWED = [" ", ":", "/", "\\", "?", "*", "\"", "<", ">", "|", "'", "!", "@", "#", "$", "%", "^", "&", "(", ")", "+", "=", "{", "}", "[", "]"]
+
+with open("./oracle-cards-20250608210949.json", "r", encoding="utf-8") as f:
+    scryfall_dump = json.load(f)
+
 def card_name_to_file_name(card_name):
-    for char in NOT_ALLOWED:
-        card_name = card_name.replace(char, "-")
+    card_name = card_name.replace(" ", "-")
+
+    card_name = "".join([char for char in card_name if char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"])
+
     while "--" in card_name:
         card_name = card_name.replace("--", "-")
+    while card_name.startswith("-"):
+        card_name = card_name[1:]
+    while card_name.endswith("-"):
+        card_name = card_name[:-1]
     return card_name.strip("-").lower()
 
-
-with open("./oracle-cards-20250606210418.json", "r", encoding="utf-8") as f:
-    cards = json.load(f)
 
 def download_image(url, filename):
     img = Image.open(requests.get(url, stream=True).raw)
@@ -39,17 +45,12 @@ def e2e_download_worker(q: queue.Queue, pbar: tqdm):
                 continue
 
             url = card["image_uris"]["normal"]
-            name = card_name_to_file_name(card["name"])
-            
-            # Create images directory if it doesn't exist
-            if not os.path.exists("./images"):
-                os.makedirs("./images")
+            name = card_name_to_file_name(card["name"] + "-" + card["type_line"])
                 
             filename = f"./images/{name}.webp"
             
             # Skip if file already exists
             if os.path.exists(filename):
-                # print(f"Skipping {card['name']} as it already exists.")
                 pbar.update(1)
                 q.task_done()
                 continue
@@ -67,7 +68,10 @@ def e2e_download_worker(q: queue.Queue, pbar: tqdm):
 NUM_THREADS = 100  # Adjust as needed
 card_queue = queue.Queue()
 
-for card_data in cards:
+if not os.path.exists("./images"):
+    os.makedirs("./images")
+
+for card_data in scryfall_dump:
     card_queue.put(card_data)
 
 progress_bar = tqdm(total=card_queue.qsize(), desc="Downloading Images")

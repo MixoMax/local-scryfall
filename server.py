@@ -48,31 +48,49 @@ async def search_cards(q: str) -> Dict[str, Any]:
         return {"error": "Failed to process query", "details": str(e)}
 
 @app.get("/api/v1/random")
-async def get_random_card() -> Dict[str, Any]:
-    """Get a random card from the database."""
+async def get_random_cards(q: str = "", count: int = 1) -> JSONResponse:
+    """Get random cards from the database. Supports a count parameter."""
     if not ALL_CARDS:
-        return {"error": "No cards available"}
-    random_card = random.choice(ALL_CARDS)
-    return {"card": random_card}
+        return JSONResponse({"error": "No cards available"}, status_code=500)
 
-@app.get("/api/v1/card/{card_name}")
-async def get_card_by_name(card_name: str) -> Dict[str, Any]:
+    filtered_cards_pool = ALL_CARDS
+    if q:
+        try:
+            filters = query_to_filter(q, debug_print=False)
+            print_filters(filters)
+            filtered_cards_pool = apply_filters(ALL_CARDS, filters)
+        except Exception as e:
+            print(f"Error processing query '{q}': {e}") # Log error server-side
+            return JSONResponse({"error": "Failed to process query", "details": str(e)}, status_code=400)
+
+    if not filtered_cards_pool:
+        return JSONResponse({"error": "No cards found matching the query"}, status_code=404)
+
+    if len(filtered_cards_pool) < count:
+        return JSONResponse({"error": "Not enough cards available"}, status_code=404)
+    
+    random_cards = random.sample(filtered_cards_pool, count)
+    if len(random_cards) == 1:
+        return JSONResponse({"card": random_cards[0]})
+    return JSONResponse({"cards": random_cards})
+
+
+@app.get("/api/v1/card/{safe_card_name}")
+async def get_card_by_name(safe_card_name: str) -> Dict[str, Any]:
     """Get a card by its name."""
-    card_name = re.sub(r"[^a-zA-Z0-9\s]", "", card_name).strip().lower()
     for card in ALL_CARDS:
-        if card["name"].lower() == card_name:
+        if card["safe_name"] == safe_card_name:
             return {"card": card}
     return {"error": "Card not found"}
 
 
-@app.get("/card/{card_name}")
-async def get_card_page(card_name: str) -> HTMLResponse:
+@app.get("/card/{safe_card_name}")
+async def get_card_page(safe_card_name: str) -> HTMLResponse:
     """Serve the card page for a specific card."""
     with open("static/card.html", "r") as f:
         html_content = f.read()
     
-    card_name = re.sub(r"[^a-zA-Z0-9\s]", "", card_name).strip().lower()
-    html_content = html_content.replace("[CARD_NAME]", card_name)
+    html_content = html_content.replace("[CARD_NAME]", safe_card_name)
 
     return HTMLResponse(content=html_content)
 
@@ -93,7 +111,20 @@ async def get_static_file(path: str = "", q: str = ""):
     
     if not os.path.exists(file_path):
         return JSONResponse(status_code=404, content={"message": "File not found"})
-    return FileResponse(file_path)
+    
+    mime_type = "application/octet-stream"
+    if "." in path:
+        ext = path.split(".")[-1].lower()
+        match ext:
+            case "html": mime_type = "text/html"
+            case "css": mime_type = "text/css"
+            case "js": mime_type = "application/javascript"
+            case "json": mime_type = "application/json"
+            case "webp": mime_type = "image/webp"
+    
+    print(f"Serving file: {file_path} with MIME type: {mime_type}")
+
+    return FileResponse(file_path, media_type=mime_type)
 
 if __name__ == "__main__":
     port = 8000

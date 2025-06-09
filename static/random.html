@@ -58,8 +58,9 @@
                 fetch("/api/v1/random")
                     .then(response => response.json())
                     .then(data => {
+                        console.log(data);
                         const card = document.createElement("img");
-                        card.src = "/" + data.card.img_file_name;
+                        card.src = "/" + data.card.file_name;
                         resultDiv.appendChild(card);
                     })
                     .catch(error => {
