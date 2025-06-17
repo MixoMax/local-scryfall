@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draft Simulator</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/draft.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-search-container">
+            <h1 class="site-title"><a href="/">MyScryfall</a></h1>
+        </div>
+    </header>
+    <main>
+        <div id="draft-container">
+            <div id="lobby">
+                <h2>Draft Lobby</h2>
+                <div id="create-draft">
+                    <h3>Create New Draft</h3>
+                    <select id="set-select"></select>
+                    <select id="booster-type-select">
+                        <option value="draft">Draft Booster</option>
+                        <option value="set">Set Booster</option>
+                    </select>
+                    <input type="number" id="num-packs-input" value="3" min="1" max="10">
+                    <button id="create-draft-btn">Create Draft</button>
+                </div>
+                <div id="session-browser">
+                    <h3>Join a Draft</h3>
+                    <ul id="session-list"></ul>
+                </div>
+            </div>
+            <div id="draft-room" style="display: none;">
+                <h2 id="draft-room-title"></h2>
+                <div id="player-list"></div>
+                <button id="start-draft-btn" style="display: none;">Start Draft</button>
+                <div id="pack-display" class="card-grid"></div>
+                <h2>Picked Cards:</h2>
+                <div id="picked-cards" class="card-grid"></div>
+            </div>
+        </div>
+    </main>
+    <script src="/draft.js"></script>
+</body>
+</html>

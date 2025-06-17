@@ -315,9 +315,9 @@ def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, Logi
                     value = value[1:-1]
                 elif value.startswith('"') and value.endswith('"'):
                     value = value[1:-1]
-                elif value.isdigit():
-                    value = int(value)
-                
+                elif all(char.isdigit() or char == "." for char in value):
+                    value = float(value)
+
                 if key[0] == "-":
                     key = key[1:]
                     for shorthand_key, shorthand_values in KEY_SHORT_HANDS.items():
