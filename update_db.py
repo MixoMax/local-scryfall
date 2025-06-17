@@ -14,9 +14,10 @@ print(download_uri)
 # download the data file
 file_path = "scryfall-data.json"
 
+# download with progress bar
 with open(file_path, "wb") as file:
     response = requests.get(download_uri, stream=True)
-    for chunk in tqdm(response.iter_content(chunk_size=
+    for chunk in tqdm(response.iter_content(chunk_size=8192), desc="Downloading data", unit="KB"):
         if chunk:
             file.write(chunk)
 print(f"Data downloaded and saved to {file_path}")
