@@ -18,17 +18,21 @@ from tqdm import tqdm
 app = FastAPI()
 
 ALL_CARDS = load_data("./cards.json")
-
+player_name: str
 draft_sessions: Dict[str, Dict[str, Any]] = {}
 
 class NewDraftRequest(BaseModel):
     set_code: str
     num_packs: int = 3
     booster_type: str = "draft"
+    player_name: str
 
 class PickCardRequest(BaseModel):
     player_id: str
     card_safe_name: str
+
+class JoinRequest(BaseModel):
+    player_name: str
 
 @app.get("/api/v1/search")
 async def search_cards(q: str) -> Dict[str, Any]:
@@ -124,12 +128,13 @@ def get_session_public_view(session_id: str):
     return {
         "id": session_id,
         "set_code": session["set_code"],
-        "players": [{"id": p["id"], "is_host": p["is_host"]} for p in session["players"]],
+        "players": [{"id": p["id"], "is_host": p["is_host"], "name": p["name"]} for p in session["players"]],
         "status": session["status"]
     }
 
 @app.post("/api/v1/draft/new")
 async def new_draft(request: NewDraftRequest):
+    print(request.player_name)
     session_id = str(uuid.uuid4())
     player_id = str(uuid.uuid4())
     
@@ -138,7 +143,7 @@ async def new_draft(request: NewDraftRequest):
         "set_code": request.set_code,
         "num_packs": request.num_packs,
         "booster_type": request.booster_type,
-        "players": [{"id": player_id, "is_host": True, "picked_cards": [], "current_pack": []}],
+        "players": [{"id": player_id, "is_host": True, "picked_cards": [], "current_pack": [], "name": request.player_name}],
         "status": "lobby", # lobby, picking, finished
         "current_pack_number": 0,
         "all_packs": []
@@ -150,7 +155,8 @@ async def get_sessions():
     return {"sessions": [get_session_public_view(sid) for sid, s in draft_sessions.items() if s["status"] == "lobby"]}
 
 @app.post("/api/v1/draft/{session_id}/join")
-async def join_draft(session_id: str):
+async def join_draft(session_id: str, request: JoinRequest):
+    print
     session = draft_sessions.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -160,8 +166,8 @@ async def join_draft(session_id: str):
         raise HTTPException(status_code=400, detail="Draft has already started")
 
     player_id = str(uuid.uuid4())
-    session["players"].append({"id": player_id, "is_host": False, "picked_cards": [], "current_pack": []})
-    return {"session_id": session_id, "player_id": player_id, "session": get_session_public_view(session_id)}
+    session["players"].append({"id": player_id, "is_host": False, "picked_cards": [], "current_pack": [], "name": request.player_name})
+    return {"session_id": session_id, "player_id": player_id, "session": get_session_public_view(session_id), "name": request.player_name}
 
 def get_cards_by_rarity(set_cards: List[Dict[str, Any]]):
     commons = [c for c in set_cards if c.get("rarity") == "common" and "Land" not in c.get("type_line", "")]
@@ -366,7 +372,7 @@ async def get_draft_status(session_id: str, player_id: str):
 
     response = {
         "status": session["status"],
-        "players": [{"id": p["id"], "is_host": p["is_host"]} for p in session["players"]],
+        "players": [{"id": p["id"], "is_host": p["is_host"], "name": p["name"]} for p in session["players"]],
     }
 
     if session["status"] == "picking":
