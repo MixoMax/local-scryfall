@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startDraftBtn = document.getElementById('start-draft-btn');
     const packDisplay = document.getElementById('pack-display');
     const pickedCardsContainer = document.getElementById('picked-cards');
+    const nameInput = document.getElementById('name-input')
 
     let currentSessionId = null;
     let currentPlayerId = null;
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/v1/draft/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ set_code: setCode, num_packs: parseInt(numPacks), booster_type: boosterType })
+            body: JSON.stringify({ set_code: setCode, num_packs: parseInt(numPacks), booster_type: boosterType, player_name: nameInput.value })
         })
         .then(response => response.json())
         .then(data => {
@@ -73,7 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function joinDraft(event) {
         const sessionId = event.target.dataset.sessionId;
-        fetch(`/api/v1/draft/${sessionId}/join`, { method: 'POST' })
+        fetch(`/api/v1/draft/${sessionId}/join`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ player_name: nameInput.value })
+         })
             .then(response => response.json())
             .then(data => {
                 if (data.session_id) {
@@ -103,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ul = document.createElement('ul');
         players.forEach(player => {
             const li = document.createElement('li');
-            li.textContent = `Player ${player.id}`;
+            li.textContent = "" + player.name;
             if (player.id === currentPlayerId) {
                 li.textContent += ' (You)';
             }
@@ -229,5 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         pickedCardsContainer.appendChild(copyButton);
+    }
+
+    function randomPlayerName() {
+        const animals = ["Panda", ]
     }
 });
