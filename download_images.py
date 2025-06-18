@@ -5,9 +5,10 @@ from PIL import Image
 import threading
 import queue
 import os
+import sys
 
 
-def download_images(bulk_file_name):
+def download_images(bulk_file_name, force_download=False):
 
     with open(bulk_file_name, "r", encoding="utf-8") as f:
         scryfall_dump = json.load(f)
@@ -31,7 +32,7 @@ def download_images(bulk_file_name):
         img.save(filename, "WEBP", quality=80)
         img.close()
 
-    def e2e_download_worker(q: queue.Queue, pbar: tqdm):
+    def e2e_download_worker(q: queue.Queue, pbar: tqdm, force_download: bool):
         while not q.empty():
             try:
                 card = q.get_nowait()
@@ -52,7 +53,7 @@ def download_images(bulk_file_name):
                 filename = f"./images/{name}.webp"
                 
                 # Skip if file already exists
-                if os.path.exists(filename):
+                if os.path.exists(filename) and not force_download:
                     pbar.update(1)
                     q.task_done()
                     continue
@@ -76,13 +77,15 @@ def download_images(bulk_file_name):
     for card_data in scryfall_dump:
         if card_data.get("lang", "en") != "en":
             continue
+        if card_data.get("promo", False):
+            continue
         card_queue.put(card_data)
 
     progress_bar = tqdm(total=card_queue.qsize(), desc="Downloading Images")
 
     threads = []
     for _ in range(NUM_THREADS):
-        thread = threading.Thread(target=e2e_download_worker, args=(card_queue, progress_bar))
+        thread = threading.Thread(target=e2e_download_worker, args=(card_queue, progress_bar, force_download))
         thread.start()
         threads.append(thread)
 
@@ -91,3 +94,12 @@ def download_images(bulk_file_name):
 
     progress_bar.close()
     print("Image download process completed.")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python download_images.py <bulk_file_name> <optional: force_download>")
+        sys.exit(1)
+
+    bulk_file_name = sys.argv[1]
+    force_download = sys.argv[2].lower() == "true" if len(sys.argv) > 2 else False
+    download_images(bulk_file_name, force_download)
