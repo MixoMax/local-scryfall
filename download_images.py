@@ -74,6 +74,8 @@ def download_images(bulk_file_name):
         os.makedirs("./images")
 
     for card_data in scryfall_dump:
+        if card_data.get("lang", "en") != "en":
+            continue
         card_queue.put(card_data)
 
     progress_bar = tqdm(total=card_queue.qsize(), desc="Downloading Images")
