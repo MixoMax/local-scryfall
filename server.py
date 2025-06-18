@@ -13,6 +13,7 @@ from functools import lru_cache
 from datetime import datetime
 import uuid
 from pydantic import BaseModel
+from tqdm import tqdm
 
 app = FastAPI()
 
@@ -77,36 +78,45 @@ async def get_card_by_name(safe_card_name: str) -> Dict[str, Any]:
             return {"card": card}
     return {"error": "Card not found"}
 
-@lru_cache(maxsize=1000)
 def get_set_codes() -> tuple[str]:
     set_set = set()
     for card in ALL_CARDS:
         set_set.update(card.get("set", []))
     return tuple(sorted(set_set))
 
-@app.get("/api/v1/sets")
-async def get_sets() -> JSONResponse:
-    """Get a list of all sets."""
-    return JSONResponse({"sets": list(get_set_codes())})
-
-@app.get("/card/{safe_card_name}")
-async def get_card_page(safe_card_name: str) -> HTMLResponse:
-    """Serve the card page for a specific card."""
-    with open("static/card.html", "r") as f:
-        html_content = f.read()
+def get_set_codes_draftable() -> List[str]:
+    fp = "draftable_sets.txt"
+    if os.path.exists(fp):
+        if os.path.getmtime(fp) > os.path.getmtime("./cards.json"):
+            # If the file is newer than the cards.json, return cached data
+            with open(fp, "r") as f:
+                return [line.strip() for line in f.readlines() if line.strip()]
     
-    html_content = html_content.replace("[CARD_NAME]", safe_card_name)
 
-    return HTMLResponse(content=html_content)
+    set_codes = get_set_codes()
+    ret_set_codes = []
+    for set_code in tqdm(set_codes):
+        for boster_type in ["draft", "set"]:
+            sim_pack = generate_pack(set_code, boster_type)
+            if len(sim_pack) < 15:
+                continue
+            ret_set_codes.append(set_code)
 
-@app.get("/random")
-async def get_random_card_page() -> FileResponse:
-    return FileResponse("static/random.html")
+    ret_set_codes = sorted(set(ret_set_codes))
+    with open(fp, "w") as f:
+        for code in ret_set_codes:
+            f.write(f"{code}\n")
 
-@app.get("/draft")
-async def get_draft_page() -> FileResponse:
-    return FileResponse("static/draft.html")
+    return ret_set_codes
 
+@app.get("/api/v1/sets")
+async def get_sets(only_draftable: bool = False):
+    """Get a list of all sets."""
+    if only_draftable:
+        return JSONResponse({"sets": get_set_codes_draftable()})
+    else:
+        return JSONResponse({"sets": list(get_set_codes())})
+    
 def get_session_public_view(session_id: str):
     session = draft_sessions.get(session_id)
     if not session:
@@ -175,7 +185,7 @@ def _add_cards_to_pack(pack: List[Dict[str, Any]], card_pool: List[Dict[str, Any
             return
         pack.extend(random.choices(pool_to_sample, k=count))
     else:
-        pack.extend(random.sample(available_cards, count))
+        pack.extend(random.sample(available_cards, k=count))
 
 def generate_set_booster(set_code: str) -> List[Dict[str, Any]]:
     set_cards = [card for card in ALL_CARDS if set_code in card.get("set", []) and len(card.get("legal_formats", [])) != 0]
@@ -218,7 +228,7 @@ def generate_set_booster(set_code: str) -> List[Dict[str, Any]]:
 
     # Slot 6: 1 Basic Land
     if basic_lands:
-        pack.append(random.choice(basic_lands))
+        _add_cards_to_pack(pack, basic_lands, 1)
     else:
         if commons:
             _add_cards_to_pack(pack, commons, 1)
@@ -246,7 +256,7 @@ def generate_draft_booster(set_code: str) -> List[Dict[str, Any]]:
 
     # Basic lands
     if basic_lands:
-        pack.append(random.choice(basic_lands))
+        _add_cards_to_pack(pack, basic_lands, 1)
     elif commons: # if no basic lands in set, add a common
         _add_cards_to_pack(pack, commons, 1)
 
@@ -254,9 +264,18 @@ def generate_draft_booster(set_code: str) -> List[Dict[str, Any]]:
 
 def generate_pack(set_code: str, booster_type: str) -> List[Dict[str, Any]]:
     if booster_type == "set":
-        return generate_set_booster(set_code)
-    else: # "draft" or any other value
-        return generate_draft_booster(set_code)
+        pack = generate_set_booster(set_code)
+    else:
+        pack = generate_draft_booster(set_code)
+
+    unique_names = []
+    pack_unique = []
+    for card in pack:
+        safe_name = card.get("safe_name", "")
+        if safe_name not in unique_names:
+            unique_names.append(safe_name)
+            pack_unique.append(card)
+    return pack_unique
 
 @app.post("/api/v1/draft/{session_id}/start")
 async def start_draft(session_id: str):
@@ -359,6 +378,28 @@ async def get_draft_status(session_id: str, player_id: str):
     response["deck"] = player["picked_cards"]
 
     return response
+
+
+
+
+@app.get("/card/{safe_card_name}")
+async def get_card_page(safe_card_name: str) -> HTMLResponse:
+    """Serve the card page for a specific card."""
+    with open("static/card.html", "r") as f:
+        html_content = f.read()
+    
+    html_content = html_content.replace("[CARD_NAME]", safe_card_name)
+
+    return HTMLResponse(content=html_content)
+
+@app.get("/random")
+async def get_random_card_page() -> FileResponse:
+    return FileResponse("static/random.html")
+
+@app.get("/draft")
+async def get_draft_page() -> FileResponse:
+    return FileResponse("static/draft.html")
+
 
 @app.get("/")
 @app.get("/{path:path}")

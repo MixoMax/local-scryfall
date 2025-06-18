@@ -67,7 +67,7 @@ def download_images(bulk_file_name):
                 pbar.update(1)
                 q.task_done()
 
-    NUM_THREADS = 100  # Adjust as needed
+    NUM_THREADS = 100
     card_queue = queue.Queue()
 
     if not os.path.exists("./images"):

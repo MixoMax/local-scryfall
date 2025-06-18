@@ -15,8 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isHost = false;
     let sessionStateInterval = null;
 
+    const SessionPollingInterval = 750;
+
     // Fetch sets for the dropdown
-    fetch('/api/v1/sets')
+    fetch('/api/v1/sets?only_draftable=true')
         .then(response => response.json())
         .then(data => {
             data.sets.forEach(set => {
@@ -49,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Periodically refresh the list of sessions
-    setInterval(refreshSessions, 3000);
+    setInterval(refreshSessions, SessionPollingInterval);
     refreshSessions();
 
     function refreshSessions() {
@@ -93,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isHost) {
             startDraftBtn.style.display = 'block';
         }
-        pollForSessionState(); // Start polling as soon as we are in the room
+        pollForSessionState();
     }
 
     function updatePlayerList(players) {
@@ -156,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Error polling for draft state:", error);
                     clearInterval(sessionStateInterval);
                 });
-        }, 2000);
+        }, SessionPollingInterval);
     }
 
     function displayPack(pack) {
@@ -213,10 +215,19 @@ document.addEventListener('DOMContentLoaded', () => {
         draftRoomTitle.textContent = 'Your Decklist';
         packDisplay.style.display = 'none';
         pickedCardsContainer.innerHTML = '';
-        deck.forEach(cardName => {
+        deck.forEach(card => {
             const p = document.createElement('p');
-            p.textContent = cardName;
+            p.textContent = card.name;
             pickedCardsContainer.appendChild(p);
         });
+        const copyButton = document.createElement('button');
+        copyButton.textContent = 'Copy Decklist to Clipboard';
+        copyButton.addEventListener('click', () => {
+            const decklist = deck.map(card => "1 " + card.name).join('\n');
+            navigator.clipboard.writeText(decklist).then(() => {
+                alert('Decklist copied to clipboard!');
+            });
+        });
+        pickedCardsContainer.appendChild(copyButton);
     }
 });

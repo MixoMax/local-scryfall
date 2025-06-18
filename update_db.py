@@ -3,6 +3,7 @@ import requests
 from tqdm import tqdm
 from prepare_data import prepare_card_data
 from download_images import download_images
+from scryfall_bulk_importer import load_data
 
 # fetch Scryfall data API for the newest bulk data export
 url = "https://api.scryfall.com/bulk-data"
@@ -26,4 +27,6 @@ print(f"Data downloaded and saved to {file_path}")
 prepare_card_data(file_path)
 download_images(file_path)
 
+
+ALL_CARDS = load_data("./cards.json")
 
