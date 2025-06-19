@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/v1/draft/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ set_code: setCode, num_packs: parseInt(numPacks), booster_type: boosterType, player_name: nameInput.value })
+            body: JSON.stringify({ set_code: setCode, num_packs: parseInt(numPacks), booster_type: boosterType, player_name: getPlayerName() })
         })
         .then(response => response.json())
         .then(data => {
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/api/v1/draft/${sessionId}/join`, { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ player_name: nameInput.value })
+            body: JSON.stringify({ player_name: getPlayerName() })
          })
             .then(response => response.json())
             .then(data => {
@@ -236,7 +236,17 @@ document.addEventListener('DOMContentLoaded', () => {
         pickedCardsContainer.appendChild(copyButton);
     }
 
-    function randomPlayerName() {
-        const animals = ["Panda", ]
+    function getPlayerName() {
+
+        const animals = ["Panda", "Koala", "Penguin", "Dolphin", "Tiger", "Lion", "Elephant", "Giraffe"];
+        const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange", "Pink", "White"];
+        
+        if (nameInput.value.trim().length > 2) {
+            return nameInput.value.trim();
+        } else {
+            const randomAnimal = animals[Math.floor(Math.random() * animals.length)];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            return randomColor + randomAnimal;
+        }
     }
 });

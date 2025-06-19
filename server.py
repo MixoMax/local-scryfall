@@ -134,7 +134,6 @@ def get_session_public_view(session_id: str):
 
 @app.post("/api/v1/draft/new")
 async def new_draft(request: NewDraftRequest):
-    print(request.player_name)
     session_id = str(uuid.uuid4())
     player_id = str(uuid.uuid4())
     
