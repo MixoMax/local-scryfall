@@ -29,16 +29,57 @@
 
 
     <main>
+        <div class="stats-controls" style="display: none;">
+            <button id="toggleStatsBtn">Show Statistics</button>
+        </div>
+        <div id="statsContainer" class="stats-container" style="display: none;">
+            <div class="chart-row">
+                <div class="chart-wrapper">
+                    <canvas id="cmcChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="powerChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="toughnessChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-row">
+                <div class="chart-wrapper pie-chart-wrapper">
+                    <canvas id="colorPieChart"></canvas>
+                </div>
+                <div class="chart-wrapper pie-chart-wrapper">
+                    <canvas id="colorIdentityPieChart"></canvas>
+                </div>
+                 <div class="chart-wrapper">
+                    <canvas id="loyaltyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
         <div id="results" class="card-grid">
             <!-- Cards will be injected here by JavaScript -->
         </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('search');
         const resultsDiv = document.getElementById('results');
-        // Removed unused resultsCountTextSpan reference
+        const statsControls = document.querySelector('.stats-controls');
+        const toggleStatsBtn = document.getElementById('toggleStatsBtn');
+        const statsContainer = document.getElementById('statsContainer');
+        let charts = {}; // To hold chart instances
+
+        // --- Chart.js Global Configuration ---
+        Chart.defaults.color = '#e0e0e0';
+        Chart.defaults.borderColor = '#4a4a4a';
+        Chart.defaults.plugins.legend.position = 'top';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#2d2d2d';
+        Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+        Chart.defaults.plugins.tooltip.bodyColor = '#e0e0e0';
+
 
         // Function to get query parameter from URL
         function getQueryParam(param) {
@@ -76,8 +117,14 @@
                     return response.json();
                 })
                 .then(data => {
+                    // First, clear old stats and hide container
+                    clearStats();
+
                     if (data.cards && data.cards.length > 0) {
-                        // Removed non-implemented UI feedback
+                        // Show stats button and generate charts
+                        statsControls.style.display = 'block';
+                        generateStats(data.cards);
+
                         // Create and observe intersection observer for lazy loading
                         const imageObserver = new IntersectionObserver((entries, observer) => {
                             entries.forEach(entry => {
@@ -114,15 +161,121 @@
             });
                     } else {
                         resultsDiv.innerHTML = '<p class="no-results">No cards found.</p>';
-                        // Removed non-implemented UI feedback
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching cards:', error);
                     resultsDiv.innerHTML = '<p class="error-message">Error fetching cards. Check console for details.</p>';
-                    // Removed non-implemented UI feedback
+                    clearStats();
                 });
         }
+
+        function clearStats() {
+            statsControls.style.display = 'none';
+            statsContainer.style.display = 'none';
+            toggleStatsBtn.textContent = 'Show Statistics';
+            // Destroy all previous chart instances
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+        }
+
+        function generateStats(cards) {
+            const cmcData = { label: 'CMC', data: cards.map(c => c.cmc) };
+            const powerData = { label: 'Power', data: cards.map(c => c.power).filter(p => p !== null) };
+            const toughnessData = { label: 'Toughness', data: cards.map(c => c.toughness).filter(t => t !== null) };
+            const loyaltyData = { label: 'Loyalty', data: cards.map(c => c.loyalty).filter(l => l !== null) };
+            
+            const colorData = { label: 'Colors', data: cards.flatMap(c => c.colors || ['C']) };
+            const colorIdentityData = { label: 'Color Identity', data: cards.flatMap(c => c.color_identity || ['C']) };
+
+            charts.cmcChart = createBarChart('cmcChart', 'CMC Distribution', cmcData);
+            charts.powerChart = createBarChart('powerChart', 'Power Distribution', powerData);
+            charts.toughnessChart = createBarChart('toughnessChart', 'Toughness Distribution', toughnessData);
+            charts.loyaltyChart = createBarChart('loyaltyChart', 'Loyalty Distribution', loyaltyData);
+
+            charts.colorPieChart = createPieChart('colorPieChart', 'Color Distribution', colorData);
+            charts.colorIdentityPieChart = createPieChart('colorIdentityPieChart', 'Color Identity Distribution', colorIdentityData);
+        }
+
+        function createBarChart(canvasId, title, data) {
+            const counts = data.data.reduce((acc, val) => {
+                acc[val] = (acc[val] || 0) + 1;
+                return acc;
+            }, {});
+
+            const sortedKeys = Object.keys(counts).sort((a, b) => {
+                // Handle 'X' and other non-numeric values
+                const numA = isNaN(a) ? -1 : parseFloat(a);
+                const numB = isNaN(b) ? -1 : parseFloat(b);
+                return numA - numB;
+            });
+
+            const chartData = {
+                labels: sortedKeys,
+                datasets: [{
+                    label: data.label,
+                    data: sortedKeys.map(key => counts[key]),
+                    backgroundColor: 'rgba(138, 180, 248, 0.6)',
+                    borderColor: 'rgba(138, 180, 248, 1)',
+                    borderWidth: 1
+                }]
+            };
+
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: title },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#383838' } },
+                        x: { grid: { color: '#383838' } }
+                    }
+                }
+            });
+        }
+
+        function createPieChart(canvasId, title, data) {
+            const colorMap = { 'W': '#F8F6D8', 'U': '#C1D7E9', 'B': '#ABA29F', 'R': '#E8B3A4', 'G': '#BDE3C0', 'C': '#CCCCCC' };
+            const counts = data.data.reduce((acc, val) => {
+                acc[val] = (acc[val] || 0) + 1;
+                return acc;
+            }, {});
+
+            const chartData = {
+                labels: Object.keys(counts),
+                datasets: [{
+                    label: data.label,
+                    data: Object.values(counts),
+                    backgroundColor: Object.keys(counts).map(c => colorMap[c] || '#808080'),
+                    hoverOffset: 4
+                }]
+            };
+
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'pie',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: title }
+                    }
+                }
+            });
+        }
+
+        toggleStatsBtn.addEventListener('click', () => {
+            const isHidden = statsContainer.style.display === 'none';
+            statsContainer.style.display = isHidden ? 'block' : 'none';
+            toggleStatsBtn.textContent = isHidden ? 'Hide Statistics' : 'Show Statistics';
+        });
 
         searchForm.addEventListener('submit', searchCards);
 

@@ -172,204 +172,112 @@ def apply_filters(data: list[dict], filter: Union[Filter, LogicalFilter]) -> lis
 
 KEY_SHORT_HANDS = { # key: short hands
     "type_line": ("t", "type"),
-    "name": ("n"),
-    "cmc": ("cost"),
-    "keywords": ("kw"),
-    "set": ("s"),
-    "rarity": ("r"),
-    "price_euro": ("euro", "eur"),
-    "price_usd": ("usd"),
+    "name": ("name",),
+    "cmc": ("mv", "manavalue"),
+    "keywords": ("kw", "keyword"),
+    "set": ("s", "e", "set", "edition"),
+    "rarity": ("r", "rarity"),
+    "price_euro": ("eur",),
+    "price_usd": ("usd",),
     "legal_formats": ("f", "format"),
-    "power": ("pow", "p"),
-    "toughness": ("tough", "to"),
-    "loyalty": ("l", "loy"),
-    "oracle_text": ("text", "o"),
-    "colors": ("col", "c", "color"),
-    "color_identity": ("col_id", "ci"),
-    "released-at": ("release", "date")
+    "power": ("pow", "power"),
+    "toughness": ("tou", "toughness"),
+    "loyalty": ("loy", "loyalty"),
+    "oracle_text": ("o", "oracle"),
+    "colors": ("c", "color"),
+    "color_identity": ("id", "identity"),
+    "released_at": ("date", "released")
 }
 
 def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, LogicalFilter]:
-    """
-    Parses a query string into a Filter or LogicalFilter object.
-    The query string should be in the Scryfall syntax format.
-    Examples:
-        --- 1)
-        query = "t:creature OR t:planeswalker cmc:4"
-        returns:
-        LogicalFilter(
-            LogicalOperator.AND,
-            [
-                LogicalFilter(
-                    LogicalOperator.OR,
-                    [
-                        Filter("type_line", Operator.CONTAINS, "creature"),
-                        Filter("type_line", Operator.CONTAINS, "planeswalker"),
-                    ],
-                ),
-                Filter("cmc", Operator.EQUALS, 4),
-            ]
-        )
+    # Pre-process query to make parsing easier
+    query = query.replace("(", " ( ").replace(")", " ) ")
+    # Tokenize query, respecting quotes
+    tokens = [t for t in re.split(r'\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)', query.strip()) if t]
 
-        --- 2)
-        query = "t:artifact AND (cmc>3 OR cmc<2)"
-        returns:
-        LogicalFilter(
-            LogicalOperator.AND,
-            [
-                Filter("type_line", Operator.CONTAINS, "artifact"),
-                LogicalFilter(
-                    LogicalOperator.OR,
-                    [
-                        Filter("cmc", Operator.GREATER_THAN, 3),
-                        Filter("cmc", Operator.LESS_THAN, 2),
-                    ],
-                ),
-            ]
-        )
-
-        --- 3)
-        query = "-t:land"
-        returns:
-        LogicalFilter(
-            LogicalOperator.NOT,
-            [
-                Filter("type_line", Operator.CONTAINS, "land"),
-            ]
-        )
-
-        --- 4)
-        query = "-t:artifact -t:creature cmc<3"
-        returns:
-        LogicalFilter(
-            LogicalOperator.AND,
-            [
-                LogicalFilter(
-                    LogicalOperator.NOT,
-                    [
-                        Filter("type_line", Operator.CONTAINS, "artifact"),
-                    ],
-                ),
-                LogicalFilter(
-                    LogicalOperator.NOT,
-                    [
-                        Filter("type_line", Operator.CONTAINS, "creature"),
-                    ],
-                ),
-                Filter("cmc", Operator.LESS_THAN, 3),
-            ]
-        )
-
-        --- 5)
-        query = "name:'Lightning Bolt' cmc=1"
-        returns:
-        LogicalFilter(
-            LogicalOperator.AND,
-            [
-                Filter("name", Operator.EQUALS, "Lightning Bolt"),
-                Filter("cmc", Operator.EQUALS, 1),
-            ]
-        )
-
-        --- 6)
-        query = "Ur-Dragon t:legendary"
-        returns:
-        LogicalFilter(
-            LogicalOperator.AND,
-            [
-                Filter("name", Operator.CONTAINS, "Ur-Dragon"),
-                Filter("type_line", Operator.CONTAINS, "legendary"),
-            ]
-        ) 
-    """
-    is_in_quote = False
-    new_query = ""
-    for char in query:
-        if char == "'" or char == '"':
-            is_in_quote = not is_in_quote
-        
-        if char == " " and is_in_quote:
-            new_query += "#"
-        else:
-            new_query += char
-    
-    parts = new_query.split()
-    filters: list[Union[Filter, LogicalFilter]] = []
-    for part in parts:
-        part = part.strip()
-
-        found_operator = False
-        for op_symbol, op in OPERATOR_SYMBOLS.items():
-            if op_symbol in part:
-                found_operator = True
-                key, value = part.split(op_symbol, 1)
-                key = key.strip()
-
-                for shorthand_key, shorthand_values in KEY_SHORT_HANDS.items():
-                    if key in shorthand_values:
-                        key = shorthand_key
-                        break
-
-                value = value.strip()
-                if value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
-                elif value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif all(char.isdigit() or char == "." for char in value):
-                    value = float(value)
-
-                if key[0] == "-":
-                    key = key[1:]
-                    for shorthand_key, shorthand_values in KEY_SHORT_HANDS.items():
-                        if key in shorthand_values:
-                            key = shorthand_key
-                            break
-                    f = LogicalFilter(LogicalOperator.NOT, [Filter(key, value, op, debug_print)])
-                    if filters and isinstance(filters[-1], LogicalFilter):
-                        filters[-1].add_filter(f)
-                    else:
-                        filters.append(f)
-                else:
-                    f = Filter(key, value, op, debug_print)
-                    if filters and isinstance(filters[-1], LogicalFilter):
-                        if filters[-1].operator != LogicalOperator.NOT:
-                            filters[-1].add_filter(f)
-                        else:
-                            filters.append(f)
-                    else:
-                        filters.append(f)
-                break
-
-        if not found_operator:
-            # If no operator was found, treat it as a name filter or logical filter
-
-            value = part.strip()
-            if value.startswith("'") and value.endswith("'"):
-                value = value[1:-1]
-            elif value.startswith('"') and value.endswith('"'):
-                value = value[1:-1]
-            
-            if value.lower() in ["and", "or"]:
-                operator = LogicalOperator.AND if value.lower() == "and" else LogicalOperator.OR
-                if filters:
-                    last_filter = filters.pop()
-                    if isinstance(last_filter, LogicalFilter):
-                        last_filter.operator = operator
-                        filters.append(last_filter)
-                    else:
-                        filters.append(LogicalFilter(operator, [last_filter], debug_print))
+    def parse_expression(tokens):
+        # Lowest precedence: implicit AND
+        and_operands = []
+        while tokens:
+            and_operands.append(parse_term(tokens))
+            if tokens and tokens[0].upper() == 'AND':
+                tokens.pop(0)  # Consume 'AND'
+            elif tokens and tokens[0] not in [')', 'OR']:
+                # Implicit AND
+                pass
             else:
-                # Assume it's a name filter
-                filters.append(Filter("name", value, Operator.CONTAINS, debug_print))
+                break
+        
+        if len(and_operands) > 1:
+            return LogicalFilter(LogicalOperator.AND, and_operands, debug_print)
+        return and_operands[0]
+
+    def parse_term(tokens):
+        # Higher precedence: OR
+        or_operands = []
+        while tokens:
+            or_operands.append(parse_factor(tokens))
+            if tokens and tokens[0].upper() == 'OR':
+                tokens.pop(0)  # Consume 'OR'
+            else:
+                break
+        
+        if len(or_operands) > 1:
+            return LogicalFilter(LogicalOperator.OR, or_operands, debug_print)
+        return or_operands[0]
+
+    def parse_factor(tokens):
+        token = tokens.pop(0)
+        is_negated = False
+        if token == '-':
+            is_negated = True
+            token = tokens.pop(0)
+        elif token.startswith('-') and len(token) > 1:
+            is_negated = True
+            token = token[1:]
+
+        if token == '(':
+            expr = parse_expression(tokens)
+            if not tokens or tokens.pop(0) != ')':
+                raise ValueError("Mismatched parentheses")
+            if is_negated:
+                return LogicalFilter(LogicalOperator.NOT, [expr], debug_print)
+            return expr
+
+        # It's a simple filter
+        filter_expr = parse_simple_filter(token)
+        if is_negated:
+            return LogicalFilter(LogicalOperator.NOT, [filter_expr], debug_print)
+        return filter_expr
+
+    def parse_simple_filter(token):
+        for op_symbol, op in OPERATOR_SYMBOLS.items():
+            if op_symbol in token:
+                key, value = token.split(op_symbol, 1)
                 
-    if not filters:
-        raise ValueError("No valid filters found in query")
-    
-    if len(filters) == 1:
-        return filters[0]
-    else:
-        # Combine all filters into a single LogicalFilter with AND operator
-        return LogicalFilter(LogicalOperator.AND, filters, debug_print)
+                if value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1]
+
+                if value.replace('.', '', 1).isdigit():
+                    num = float(value)
+                    if op == Operator.EQUALS and num.is_integer():
+                        value = int(num)
+                    else:
+                        value = num
+                
+                original_key = key
+                for k, shorthands in KEY_SHORT_HANDS.items():
+                    if key in shorthands:
+                        key = k
+                        break
+                
+                return Filter(key, value, op, debug_print)
+        
+        return Filter("name", token, Operator.CONTAINS, debug_print)
+
+    return parse_expression(tokens)
     
 
     

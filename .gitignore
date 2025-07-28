@@ -1,3 +1,4 @@
 /images
 scryfall-data.json
 draftable_sets.txt
+*.pyc

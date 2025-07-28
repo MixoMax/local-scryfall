@@ -14,6 +14,14 @@ def card_name_to_file_name(card_name):
         card_name = card_name[:-1]
     return card_name.strip("-").lower()
 
+def parse_number(value):
+    if value is None or value == "":
+        return 0
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
 def prepare_card_data(bulk_file_name):
 
     with open(bulk_file_name, "r", encoding="utf-8") as f:
@@ -32,17 +40,17 @@ def prepare_card_data(bulk_file_name):
             "cmc": card.get("cmc", card.get("card_faces", [{}])[0].get("cmc", 0)),
             "type_line": card.get("type_line", card.get("card_faces", [{}])[0].get("type_line", "")),
             "oracle_text": card.get("oracle_text", card.get("card_faces", [{}])[0].get("oracle_text", "")),
-            "power": card.get("power", card.get("card_faces", [{}])[0].get("power", "")),
-            "toughness": card.get("toughness", card.get("card_faces", [{}])[0].get("toughness", "")),
-            "loyalty": card.get("loyalty", card.get("card_faces", [{}])[0].get("loyalty", "")),
+            "power": parse_number(card.get("power", card.get("card_faces", [{}])[0].get("power", ""))),
+            "toughness": parse_number(card.get("toughness", card.get("card_faces", [{}])[0].get("toughness", ""))),
+            "loyalty": parse_number(card.get("loyalty", card.get("card_faces", [{}])[0].get("loyalty", ""))),
             "colors": card.get("colors", card.get("card_faces", [{}])[0].get("colors", [])),
             "color_identity": card.get("color_identity", []),
             "keywords": card.get("keywords", []),
             "set": [card.get("set", "")],
             "rarity": card.get("rarity", ""),
             "edhrec_rank": card.get("edhrec_rank", 0),
-            "price_euro": card.get("prices", {}).get("eur", 0.0),
-            "price_usd": card.get("prices", {}).get("usd", 0.0),
+            "price_euro": parse_number(card.get("prices", {}).get("eur", 0.0)),
+            "price_usd": parse_number(card.get("prices", {}).get("usd", 0.0)),
             "legal_formats": [fmt_str for fmt_str, legal in card.get("legalities", {}).items() if legal == "legal"],
         })
 
