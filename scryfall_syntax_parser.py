@@ -38,17 +38,24 @@ OPERATOR_SYMBOLS = {
 
 
 class Filter:
-    def __init__(self, key: str, value, operator: Operator = Operator.EQUALS, debug_print: bool = False):
+    def __init__(self, key: str, value, operator: Operator = Operator.EQUALS, debug_print: bool = False, is_n_key: bool = False):
         self.debug_print = debug_print
         self.key = key
         self.value = value
         self.operator = operator
+        self.is_n_key = is_n_key
     
     def check(self, item: dict) -> bool:
         if self.key not in item:
             return False
         
         item_value = item[self.key]
+
+        if self.is_n_key:
+            if isinstance(item_value, (str, list)):
+                item_value = len(item_value)
+            else:
+                item_value = 0
         
         if isinstance(item_value, str) and isinstance(self.value, str):
             match self.operator:
@@ -110,7 +117,8 @@ class Filter:
             return False  # Type mismatch or unsupported comparison
 
     def __str__(self):
-        return f"Filter(key={self.key}, value={self.value}, operator={self.operator})"
+        n_prefix = "n-" if self.is_n_key else ""
+        return f"Filter(key={n_prefix}{self.key}, value={self.value}, operator={self.operator})"
     def __repr__(self):
         return self.__str__()
 
@@ -185,8 +193,9 @@ KEY_SHORT_HANDS = { # key: short hands
     "loyalty": ("loy", "loyalty"),
     "oracle_text": ("o", "oracle"),
     "colors": ("c", "color"),
-    "color_identity": ("id", "identity"),
-    "released_at": ("date", "released")
+    "color_identity": ("id", "identity", "ci"),
+    "released_at": ("date", "released"),
+    "edhrec_rank": ("edhrec", "rank", "edhrec_rank"),
 }
 
 def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, LogicalFilter]:
@@ -254,7 +263,12 @@ def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, Logi
         for op_symbol, op in OPERATOR_SYMBOLS.items():
             if op_symbol in token:
                 key, value = token.split(op_symbol, 1)
-                
+
+                is_n_key = False
+                if key.startswith('n-') and len(key) > 2:
+                    is_n_key = True
+                    key = key[2:]
+
                 if value.startswith('"') and value.endswith('"'):
                     value = value[1:-1]
                 elif value.startswith("'") and value.endswith("'"):
@@ -273,7 +287,7 @@ def query_to_filter(query: str, debug_print: bool = False) -> Union[Filter, Logi
                         key = k
                         break
                 
-                return Filter(key, value, op, debug_print)
+                return Filter(key, value, op, debug_print, is_n_key=is_n_key)
         
         return Filter("name", token, Operator.CONTAINS, debug_print)
 

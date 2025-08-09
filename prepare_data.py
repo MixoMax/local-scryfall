@@ -34,7 +34,7 @@ def prepare_card_data(bulk_file_name):
             "name": card["name"],
             "safe_name": card_name_to_file_name(card["name"]),
             "file_name": card_name_to_file_name(card["name"] + "-" + card.get("type_line", card.get("card_faces", [{}])[0].get("type_line", ""))) + ".webp",
-            "released-at": card["released_at"],
+            "released_at": card["released_at"],
             "year": int(card["released_at"].split("-")[0]),
             "mana_cost": card.get("mana_cost", card.get("card_faces", [{}])[0].get("mana_cost", "")),
             "cmc": card.get("cmc", card.get("card_faces", [{}])[0].get("cmc", 0)),

@@ -367,6 +367,20 @@ TEST_CASES = [
                 )
             ]
         )
+    ],
+    [
+        # Test 38: legal commanders in izzet colors
+        "f:commander ci:RU AND -t:land AND -t:stickers AND -t:attraction",
+        LogicalFilter(
+            operator=LogicalOperator.AND,
+            filters=[
+                Filter(key="legal_formats", value="commander", operator=Operator.CONTAINS),
+                Filter(key="color_identity", value="RU", operator=Operator.CONTAINS),
+                LogicalFilter(operator=LogicalOperator.NOT, filters=[Filter(key="type_line", value="land", operator=Operator.CONTAINS)]),
+                LogicalFilter(operator=LogicalOperator.NOT, filters=[Filter(key="type_line", value="stickers", operator=Operator.CONTAINS)]),
+                LogicalFilter(operator=LogicalOperator.NOT, filters=[Filter(key="type_line", value="attraction", operator=Operator.CONTAINS)]),
+            ]
+        )
     ]
 ]
 
@@ -382,15 +396,14 @@ def run_one_test(test_case: list):
     cards_got = set([hash(str(card)) for card in _cards_got])
 
     if len(cards_expected) == 0:
-        return (-1, query, expected_filter, got_filter)
+        return (-1, query, expected_filter, got_filter, len(cards_expected), len(cards_got))
 
     if cards_expected != cards_got:
-        return (0, query, expected_filter, got_filter)
+        return (0, query, expected_filter, got_filter, len(cards_expected), len(cards_got))
     else:
-        return (1, query, expected_filter, got_filter)
-            
-        
-    
+        return (1, query, expected_filter, got_filter, len(cards_expected), len(cards_got))
+
+
 def run_tests(print_all: bool = False):
     t_start = time.time()
 
@@ -401,26 +414,31 @@ def run_tests(print_all: bool = False):
     
     for idx, test_case in enumerate(TEST_CASES):
         try:
-            success, query, expected_filter, got_filter = run_one_test(test_case)
+            success, query, expected_filter, got_filter, n_expected, n_got = run_one_test(test_case)
             if (success == -1 or success == 0) or print_all:
                 print(f"{idx + 1}/{len(TEST_CASES)} - ", end="")
                 match success:
-                    case 1: print(colorama.Fore.GREEN + "PASS for query: " + query + colorama.Fore.RESET)
+                    case 1: print(colorama.Fore.GREEN + f"PASS for query: {query} (returned {n_got} cards)" + colorama.Fore.RESET)
                     case 0: 
                         print(colorama.Fore.RED + "FAIL for query: " + query + colorama.Fore.RESET)
                         print("Expected filter: ", end="")
                         print_filters(expected_filter)
+                        print(f" (expected {n_expected} cards)")
                         print()
                         print("Got filter: ", end="")
                         print_filters(got_filter)
+                        print(f" (got {n_got} cards)")
                         print()
                     case -1: 
                         print(colorama.Fore.YELLOW + "WARNING for query: " + query + colorama.Fore.RESET)
                         print("Expected filter: ", end="")
                         print_filters(expected_filter)
+                        print(f" (expected {n_expected} cards)")
                         print()
                         print("Got filter: ", end="")
                         print_filters(got_filter)
+                        print(f" (got {n_got} cards)")
+                        print("This test case is expected to return some cards, but it returned none.")
                         print()
 
         except Exception as e:

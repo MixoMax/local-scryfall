@@ -1,4 +1,4 @@
-from scryfall_syntax_parser import query_to_filter, apply_filters, print_filters, Filter, LogicalFilter, LogicalOperator, Operator
+from scryfall_syntax_parser import KEY_SHORT_HANDS, query_to_filter, apply_filters, print_filters, Filter, LogicalFilter, LogicalOperator, Operator
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -6,6 +6,7 @@ import uvicorn
 import os
 import sys
 import re
+import time
 from typing import Any, Dict, List, Union
 import random
 from scryfall_bulk_importer import load_data
@@ -35,17 +36,123 @@ class JoinRequest(BaseModel):
     player_name: str
 
 @app.get("/api/v1/search")
-async def search_cards(q: str) -> Dict[str, Any]:
+async def search_cards(q: str, order: Union[str, None] = None, direction: Union[str, None] = None) -> Dict[str, Any]:
     """Search cards using Scryfall-like syntax."""
+    start_time = time.perf_counter()
     try:
-        filters = query_to_filter(q, debug_print=False)
-        print_filters(filters)
-        filtered_cards = apply_filters(ALL_CARDS, filters)
+        # Tokenize query, respecting quotes, to safely separate sorting directives
+        tokens = [t for t in re.split(r'\s+(?=(?:[^\'"]*[\\"][^\'"]*[\\"])*[^\'"]*$)', q.strip()) if t]
+        
+        new_tokens = []
+        local_order = None
+        local_direction = None
+
+        for token in tokens:
+            token_lower = token.lower()
+            if token_lower.startswith("order:") or token_lower.startswith("sort:"):
+                local_order = token.split(':', 1)[1]
+            elif token_lower.startswith("direction:") or token_lower.startswith("dir:"):
+                local_direction = token.split(':', 1)[1]
+                if local_direction not in ["asc", "desc", "ascending", "descending"]:
+                    local_direction = None
+            else:
+                new_tokens.append(token)
+        
+        # Prioritize function arguments if they are not at their default values
+        if order is None:
+            order = local_order
+        
+        direction = local_direction if direction is None else direction
+
+        q = " ".join(new_tokens)
+
+        if len(new_tokens) > 0:
+            filters = query_to_filter(q, debug_print=False)
+            print_filters(filters)
+            filtered_cards = apply_filters(ALL_CARDS, filters)
+        else:
+            filtered_cards = ALL_CARDS
+        
+        if order:
+            sort_key_map = {
+                "date": "released_at", "year": "released_at",
+                "cmc": "cmc",
+                "power": "power", "pow": "power",
+                "toughness": "toughness", "tou": "toughness",
+                "loyalty": "loyalty", "loy": "loyalty",
+                "eur": "price_euro", "euro": "price_euro",
+                "usd": "price_usd",
+                "edhrec": "edhrec_rank", "rank": "edhrec_rank", "edhrec_rank": "edhrec_rank"
+            }
+
+            sort_value_types = {
+                "date": "date",
+                "cmc": "int",
+                "power": "float",
+                "toughness": "float",
+                "loyalty": "float",
+                "price_euro": "float",
+                "price_usd": "float",
+            }
+
+            # sort keys where the defauld direction is descending. All others have Ascending as their default
+            default_desc_sort_keys = [
+                "released_at", "price_euro", "price_usd", "edhrec_rank"
+            ]
+
+            
+            is_n_sort = False
+            if order.startswith("n-") and len(order) > 2:
+                is_n_sort = True
+                order_key_shorthand = order[2:]
+                # Resolve shorthand to the actual key
+                order = next((k for k, shorthands in KEY_SHORT_HANDS.items() if order_key_shorthand in shorthands), order_key_shorthand)
+
+            sort_key = sort_key_map.get(order, order)
+            
+            default_direction = "desc" if (sort_key in default_desc_sort_keys) or is_n_sort else "asc"
+            if direction is None:
+                direction = default_direction            
+
+            reverse_sort = direction.lower() in ["desc", "descending"]
+
+            def get_sort_value(card):
+                val = card.get(sort_key)
+
+                if is_n_sort:
+                    return len(val) if isinstance(val, (str, list)) else 0
+
+                if val is None:
+                    return 0
+                
+                if order in sort_value_types:
+                    if sort_value_types[order] == "date":
+                        return datetime.strptime(val, "%Y-%m-%d").timestamp()
+                    elif sort_value_types[order] == "int":
+                        try:
+                            return int(val)
+                        except ValueError:
+                            return 0
+                    elif sort_value_types[order] == "float":
+                        try:
+                            return float(val)
+                        except ValueError:
+                            return 0.0
+                return val
+
+            print(f"Sorting by {sort_key} in {'descending' if reverse_sort else 'ascending'} order")
+            filtered_cards.sort(key=get_sort_value, reverse=reverse_sort)
+
+        end_time = time.perf_counter()
+        took_ms = round((end_time - start_time) * 1000)
+
         if not filtered_cards:
-            return {"error": "No cards found matching the query"}
-        return {"cards": filtered_cards}
+            return {"error": "No cards found matching the query", "took_ms": took_ms}
+        return {"cards": filtered_cards, "took_ms": took_ms}
     except Exception as e:
-        return {"error": "Failed to process query", "details": str(e)}
+        end_time = time.perf_counter()
+        took_ms = round((end_time - start_time) * 1000)
+        return {"error": "Failed to process query", "details": str(e), "took_ms": took_ms}
 
 @app.get("/api/v1/random")
 async def get_random_cards(q: str = "", count: int = 1) -> JSONResponse:

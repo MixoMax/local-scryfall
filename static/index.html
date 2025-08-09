@@ -29,31 +29,16 @@
 
 
     <main>
+        <div id="query-stats" style="display: none;"></div>
         <div class="stats-controls" style="display: none;">
             <button id="toggleStatsBtn">Show Statistics</button>
         </div>
         <div id="statsContainer" class="stats-container" style="display: none;">
-            <div class="chart-row">
-                <div class="chart-wrapper">
-                    <canvas id="cmcChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="powerChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="toughnessChart"></canvas>
-                </div>
+            <div id="chartOptions" class="chart-options">
+                <!-- Checkboxes will be injected here -->
             </div>
-            <div class="chart-row">
-                <div class="chart-wrapper pie-chart-wrapper">
-                    <canvas id="colorPieChart"></canvas>
-                </div>
-                <div class="chart-wrapper pie-chart-wrapper">
-                    <canvas id="colorIdentityPieChart"></canvas>
-                </div>
-                 <div class="chart-wrapper">
-                    <canvas id="loyaltyChart"></canvas>
-                </div>
+            <div id="chartGrid" class="chart-grid">
+                <!-- Charts will be dynamically injected here -->
             </div>
         </div>
 
@@ -70,7 +55,19 @@
         const statsControls = document.querySelector('.stats-controls');
         const toggleStatsBtn = document.getElementById('toggleStatsBtn');
         const statsContainer = document.getElementById('statsContainer');
+        const chartOptionsDiv = document.getElementById('chartOptions');
+        const chartGridDiv = document.getElementById('chartGrid');
+        const queryStatsDiv = document.getElementById('query-stats');
+
         let charts = {}; // To hold chart instances
+        const allChartTypes = {
+            cmc: { label: 'CMC', type: 'bar' },
+            power: { label: 'Power', type: 'bar' },
+            toughness: { label: 'Toughness', type: 'bar' },
+            loyalty: { label: 'Loyalty', type: 'bar' },
+            colors: { label: 'Colors', type: 'pie' },
+            color_identity: { label: 'Color Identity', type: 'pie' }
+        };
 
         // --- Chart.js Global Configuration ---
         Chart.defaults.color = '#e0e0e0';
@@ -94,6 +91,9 @@
 
             const query = searchInput.value.trim();
             resultsDiv.innerHTML = '';
+            if (queryStatsDiv) {
+                queryStatsDiv.style.display = 'none';
+            }
 
             if (!query) {
                 // Removed non-implemented UI feedback
@@ -121,9 +121,18 @@
                     clearStats();
 
                     if (data.cards && data.cards.length > 0) {
+                        if (data.took_ms !== undefined) {
+                            queryStatsDiv.textContent = `${data.cards.length} Cards for query fetched in ${data.took_ms} ms`;
+                            queryStatsDiv.style.display = 'block';
+                        }
+
                         // Show stats button and generate charts
                         statsControls.style.display = 'block';
-                        generateStats(data.cards);
+                        // Only generate stats if the container is already visible
+                        if (statsContainer.style.display !== 'none') {
+                            generateStats(data.cards);
+                        }
+
 
                         // Create and observe intersection observer for lazy loading
                         const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -170,31 +179,78 @@
                 });
         }
 
-        function clearStats() {
-            statsControls.style.display = 'none';
-            statsContainer.style.display = 'none';
-            toggleStatsBtn.textContent = 'Show Statistics';
+        function clearStats(fullClear = true) {
             // Destroy all previous chart instances
             Object.values(charts).forEach(chart => chart.destroy());
             charts = {};
+            chartGridDiv.innerHTML = ''; // Clear the grid
+
+            if (fullClear) {
+                statsControls.style.display = 'none';
+                statsContainer.style.display = 'none';
+                toggleStatsBtn.textContent = 'Show Statistics';
+            }
         }
 
+        function getChartPreferences() {
+            const savedPrefs = localStorage.getItem('chartPreferences');
+            if (savedPrefs) {
+                return JSON.parse(savedPrefs);
+            }
+            // Default preferences
+            return {
+                cmc: true,
+                power: false,
+                toughness: false,
+                loyalty: false,
+                colors: true,
+                color_identity: true
+            };
+        }
+
+        function saveChartPreferences(prefs) {
+            localStorage.setItem('chartPreferences', JSON.stringify(prefs));
+        }
+
+
         function generateStats(cards) {
-            const cmcData = { label: 'CMC', data: cards.map(c => c.cmc) };
-            const powerData = { label: 'Power', data: cards.map(c => c.power).filter(p => p !== null) };
-            const toughnessData = { label: 'Toughness', data: cards.map(c => c.toughness).filter(t => t !== null) };
-            const loyaltyData = { label: 'Loyalty', data: cards.map(c => c.loyalty).filter(l => l !== null) };
-            
-            const colorData = { label: 'Colors', data: cards.flatMap(c => c.colors || ['C']) };
-            const colorIdentityData = { label: 'Color Identity', data: cards.flatMap(c => c.color_identity || ['C']) };
+            clearStats(false); // Clear previous charts without hiding the container
+            const preferences = getChartPreferences();
 
-            charts.cmcChart = createBarChart('cmcChart', 'CMC Distribution', cmcData);
-            charts.powerChart = createBarChart('powerChart', 'Power Distribution', powerData);
-            charts.toughnessChart = createBarChart('toughnessChart', 'Toughness Distribution', toughnessData);
-            charts.loyaltyChart = createBarChart('loyaltyChart', 'Loyalty Distribution', loyaltyData);
+            const cardData = {
+                cmc: cards.map(c => c.cmc),
+                power: cards.map(c => c.power).filter(p => p !== null),
+                toughness: cards.map(c => c.toughness).filter(t => t !== null),
+                loyalty: cards.map(c => c.loyalty).filter(l => l !== null),
+                colors: cards.flatMap(c => c.colors || ['C']),
+                color_identity: cards.flatMap(c => c.color_identity || ['C'])
+            };
 
-            charts.colorPieChart = createPieChart('colorPieChart', 'Color Distribution', colorData);
-            charts.colorIdentityPieChart = createPieChart('colorIdentityPieChart', 'Color Identity Distribution', colorIdentityData);
+            for (const [key, config] of Object.entries(allChartTypes)) {
+                if (preferences[key] && cardData[key].length > 0) {
+                    const canvasId = `${key}Chart`;
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'chart-wrapper';
+                    if (config.type === 'pie') {
+                        wrapper.classList.add('pie-chart-wrapper');
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.id = canvasId;
+                    wrapper.appendChild(canvas);
+                    chartGridDiv.appendChild(wrapper);
+
+                    const chartTitle = `${config.label} Distribution`;
+                    const dataPayload = { label: config.label, data: cardData[key] };
+
+                    if (config.type === 'bar') {
+                        charts[canvasId] = createBarChart(canvasId, chartTitle, dataPayload);
+                    } else if (config.type === 'pie') {
+                        charts[canvasId] = createPieChart(canvasId, chartTitle, dataPayload);
+                    }
+                }
+            }
         }
 
         function createBarChart(canvasId, title, data) {
@@ -275,12 +331,67 @@
             const isHidden = statsContainer.style.display === 'none';
             statsContainer.style.display = isHidden ? 'block' : 'none';
             toggleStatsBtn.textContent = isHidden ? 'Hide Statistics' : 'Show Statistics';
+
+            // If we are showing the stats, and there are results, generate the charts
+            if (isHidden && resultsDiv.querySelector('.card-item')) {
+                // We need to re-fetch the data to generate stats, as we don't store it globally
+                // A better approach might store the last search result, but this is simpler for now.
+                const query = getQueryParam('q');
+                if (query) {
+                    fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.cards && data.cards.length > 0) {
+                                generateStats(data.cards);
+                            }
+                        });
+                }
+            }
         });
+
+        function setupChartOptions() {
+            const preferences = getChartPreferences();
+            chartOptionsDiv.innerHTML = '<span>Chart Options:</span>';
+
+            for (const [key, config] of Object.entries(allChartTypes)) {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `check-${key}`;
+                checkbox.checked = preferences[key] || false;
+
+                checkbox.addEventListener('change', () => {
+                    const currentPrefs = getChartPreferences();
+                    currentPrefs[key] = checkbox.checked;
+                    saveChartPreferences(currentPrefs);
+
+                    // If stats are visible, regenerate them
+                    if (statsContainer.style.display !== 'none' && resultsDiv.querySelector('.card-item')) {
+                         const query = getQueryParam('q');
+                        if (query) {
+                             fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.cards && data.cards.length > 0) {
+                                        generateStats(data.cards);
+                                    }
+                                });
+                        }
+                    }
+                });
+
+                label.appendChild(checkbox);
+                label.append(` ${config.label}`);
+                chartOptionsDiv.appendChild(label);
+            }
+        }
+
 
         searchForm.addEventListener('submit', searchCards);
 
         // Check for query parameter on page load
         window.addEventListener('load', () => {
+            setupChartOptions();
             const query = getQueryParam('q');
             if (query) {
                 searchInput.value = query;
