@@ -47,6 +47,7 @@ def prepare_card_data(bulk_file_name):
             "color_identity": card.get("color_identity", []),
             "keywords": card.get("keywords", []),
             "set": [card.get("set", "")],
+            "collector_number": card.get("collector_number", ""),
             "rarity": card.get("rarity", ""),
             "edhrec_rank": card.get("edhrec_rank", 0),
             "price_euro": parse_number(card.get("prices", {}).get("eur", 0.0)),

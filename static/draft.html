@@ -3,46 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Draft Simulator</title>
-    <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/draft.css">
+    <title>Draft Simulator // TERMINAL</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#00f3ff',
+                        surface: '#0a0a0a',
+                        glass: 'rgba(255, 255, 255, 0.03)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/cyberpunk.css">
+    <style>
+        /* Specific Draft Styles */
+        .picked-card { opacity: 0.5; filter: grayscale(100%); border-color: #333 !important; }
+        .card-item.picked img { pointer-events: none; }
+    </style>
 </head>
-<body>
-    <header class="site-header">
-        <div class="logo-search-container">
-            <h1 class="site-title"><a href="/">MyScryfall</a></h1>
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
+                <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+            </h1>
+             <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
+                <a href="/" class="nav-link hover:text-accent transition-colors">Return_Home</a>
+            </nav>
         </div>
     </header>
-    <main>
-        <div id="draft-container">
-            <div id="name"><input id="name-input" placeholder="Name" maxlength="16"/></div>
-            <div id="lobby">
-                <h2>Draft Lobby</h2>
-                <div id="create-draft">
-                    <h3>Create New Draft</h3>
-                    <select id="set-select"></select>
-                    <select id="booster-type-select">
-                        <option value="draft">Draft Booster</option>
-                        <option value="set">Set Booster</option>
-                    </select>
-                    <input type="number" id="num-packs-input" value="3" min="1" max="10">
-                    <button id="create-draft-btn">Create Draft</button>
-                </div>
-                <div id="session-browser">
-                    <h3>Join a Draft</h3>
-                    <ul id="session-list"></ul>
+
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen">
+        
+        <div id="draft-container" class="max-w-6xl mx-auto">
+            
+            <div id="name" class="mb-8">
+                <input id="name-input" placeholder="ENTER_CODENAME" maxlength="16" 
+                       class="bg-black/50 border border-white/10 p-3 text-sm font-mono text-accent focus:border-accent focus:outline-none transition-colors uppercase placeholder-gray-700 w-full md:w-64 rounded-sm"/>
+            </div>
+
+            <!-- Lobby Section -->
+            <div id="lobby" class="glass-panel p-8 rounded-lg border border-white/5 mb-8">
+                <h2 class="text-2xl font-bold text-white font-sans uppercase tracking-tight mb-6 border-b border-white/10 pb-4">
+                    Draft Lobby <span class="text-accent text-xs align-top font-mono ml-2">STATUS: IDLE</span>
+                </h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <!-- Create Draft -->
+                    <div id="create-draft" class="space-y-4">
+                        <h3 class="text-lg font-mono text-accent uppercase mb-4">> INITIALIZE_NEW_SESSION</h3>
+                        
+                        <div class="flex flex-col gap-4">
+                            <select id="set-select" class="bg-black/50 border border-white/10 p-3 text-sm font-mono text-gray-300 focus:border-accent focus:outline-none uppercase rounded-sm"></select>
+                            
+                            <select id="booster-type-select" class="bg-black/50 border border-white/10 p-3 text-sm font-mono text-gray-300 focus:border-accent focus:outline-none uppercase rounded-sm">
+                                <option value="draft">Draft Booster</option>
+                                <option value="set">Set Booster</option>
+                            </select>
+                            
+                            <div class="flex items-center gap-4">
+                                <label class="font-mono text-xs text-gray-500 uppercase">PACK_COUNT:</label>
+                                <input type="number" id="num-packs-input" value="3" min="1" max="10" 
+                                       class="bg-black/50 border border-white/10 p-3 text-sm font-mono text-accent focus:border-accent focus:outline-none w-20 text-center rounded-sm">
+                            </div>
+
+                            <button id="create-draft-btn" class="bg-white text-black font-mono uppercase text-sm px-6 py-3 hover:bg-accent transition-colors font-bold tracking-wider mt-4">
+                                Create_Session
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Join Draft -->
+                    <div id="session-browser">
+                        <h3 class="text-lg font-mono text-accent uppercase mb-4">> ACTIVE_SESSIONS</h3>
+                        <ul id="session-list" class="space-y-2 font-mono text-sm">
+                            <!-- Sessions injected here -->
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div id="draft-room" style="display: none;">
-                <h2 id="draft-room-title"></h2>
-                <div id="player-list"></div>
-                <button id="start-draft-btn" style="display: none;">Start Draft</button>
-                <div id="pack-display" class="card-grid"></div>
-                <h2>Picked Cards:</h2>
-                <div id="picked-cards" class="card-grid"></div>
+
+            <!-- Draft Room Section -->
+            <div id="draft-room" style="display: none;" class="space-y-8">
+                
+                <div class="glass-panel p-6 rounded-lg border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 id="draft-room-title" class="text-xl font-bold text-white font-sans uppercase tracking-tight"></h2>
+                        <div id="player-list" class="mt-2 font-mono text-xs text-gray-400"></div>
+                    </div>
+                    <button id="start-draft-btn" style="display: none;" class="bg-accent text-black font-mono uppercase text-sm px-6 py-3 hover:bg-white transition-colors font-bold tracking-wider shadow-[0_0_20px_rgba(0,243,255,0.3)]">
+                        Start_Sequence
+                    </button>
+                </div>
+
+                <!-- Pack Display -->
+                <div id="pack-display" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+
+                <!-- Picked Cards -->
+                <div class="border-t border-white/10 pt-8">
+                    <h2 class="text-lg font-mono text-accent uppercase mb-6">> INVENTORY_MATRIX</h2>
+                    <div id="picked-cards" class="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-8 gap-2"></div>
+                </div>
+
             </div>
         </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+        <span>Sys.Status: ONLINE</span>
+        <span>Loc: /draft_sim</span>
+    </footer>
+
+    <script src="/cyberpunk.js"></script>
     <script src="/draft.js"></script>
 </body>
 </html>

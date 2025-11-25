@@ -3,43 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random EDH Deck Builder</title>
+    <title>EDH Constructor // TERMINAL</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#00f3ff',
+                        surface: '#0a0a0a',
+                        glass: 'rgba(255, 255, 255, 0.03)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/cyberpunk.css">
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #e8e8e8; }
-        h1, h2 { text-align: center; color: #e8e8e8; }
-        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .card-image { width: 150px; height: auto; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; transition: transform 0.2s ease-in-out; }
-        .card-image:hover { transform: scale(1.05); border-color: #007bff; }
-        .selected-commander { border: 3px solid gold; }
-        .card-image[selected="true"] { border: 3px solid #28a745; }
-        .card-image[selected="false"] { border: 3px solid black; }
-        #loading { display: none; }
-        #loading, #error { text-align: center; font-size: 1.2em; margin-top: 20px; }
-        #deck-list { list-style: none; padding: 0; }
-        #deck-list li { background-color: #fff; border: 1px solid #ddd; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+        .selected-commander { border-color: #00f3ff !important; box-shadow: 0 0 20px rgba(0, 243, 255, 0.3); }
+        .card-selected { border-color: #00f3ff !important; opacity: 1 !important; }
+        .card-unselected { border-color: transparent; opacity: 0.6; }
     </style>
-    <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-    <h1>Random EDH Deck Builder</h1>
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
 
-    <div id="loading">Loading...</div>
-    <div id="error" style="color: red;"></div>
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
+                <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+            </h1>
+             <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
+                <a href="/" class="nav-link hover:text-accent transition-colors">Return_Home</a>
+            </nav>
+        </div>
+    </header>
 
-    <h2>Step 1: Choose your Commander</h2>
-    <div id="commander-selection" class="container">
-        <!-- Commander images will be loaded here -->
-    </div>
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen">
+        
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-white font-sans uppercase tracking-tight mb-2">EDH Deck Constructor</h1>
+            <p class="font-mono text-accent text-sm">PROTOCOL: RANDOMIZED_COMMANDER_INIT</p>
+        </div>
 
-    <p id="N_selected_cards">Selected Cards: <span id="selected-count">0</span></p>
+        <div id="loading" class="hidden text-center font-mono text-accent animate-pulse mb-8">
+            > ACCESSING_DATABASE...
+        </div>
+        <div id="error" class="text-center font-mono text-red-500 mb-8"></div>
 
-    <h2>Step 2: Your Deck (100 Choose 30)</h2>
-    <div id="deck-display" class="container">
-        <!-- Deck card images will be loaded here -->
-    </div>
+        <!-- Step 1 -->
+        <section class="mb-20">
+            <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-4">
+                <span class="bg-accent text-black font-bold font-mono px-2 py-1 text-xs">STEP_01</span>
+                <h2 class="text-xl font-bold text-white font-sans uppercase tracking-tight">Select Commander Unit</h2>
+            </div>
+            
+            <div id="commander-selection" class="grid grid-cols-2 md:grid-cols-5 gap-6 justify-center">
+                <!-- Commander images will be loaded here -->
+            </div>
+        </section>
 
-    <button onclick="copyDecklist()">Copy Decklist</button>
+        <!-- Step 2 -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between gap-4 mb-8 border-b border-white/10 pb-4">
+                <div class="flex items-center gap-4">
+                    <span class="bg-gray-800 text-white font-bold font-mono px-2 py-1 text-xs">STEP_02</span>
+                    <h2 class="text-xl font-bold text-white font-sans uppercase tracking-tight">Deck Compilation</h2>
+                </div>
+                <p class="font-mono text-xs text-gray-400">SELECTED: <span id="selected-count" class="text-accent font-bold text-lg">0</span>/30</p>
+            </div>
 
+            <div id="deck-display" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Deck card images will be loaded here -->
+            </div>
+        </section>
+
+        <div class="fixed bottom-8 right-8 z-50">
+            <button onclick="copyDecklist()" class="glass-panel bg-black/80 text-accent border border-accent hover:bg-accent hover:text-black font-mono uppercase text-sm px-6 py-4 transition-all font-bold tracking-wider shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+                Export_Decklist
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+        <span>Sys.Status: ONLINE</span>
+        <span>Loc: /edh_builder</span>
+    </footer>
+
+    <script src="/cyberpunk.js"></script>
     <script>
         const loadingDiv = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
@@ -66,7 +131,7 @@
                 return await response.json();
             } catch (e) {
                 console.error("Fetch error:", e);
-                errorDiv.textContent = `Failed to fetch data: ${e.message}`;
+                errorDiv.textContent = `SYSTEM_ERROR: ${e.message}`;
                 throw e;
             }
         }
@@ -74,59 +139,87 @@
         function displayCards(cards, container, isCommanderSelection) {
             container.innerHTML = ''; // Clear previous cards
             if (!cards || cards.length === 0) {
-                container.textContent = 'No cards found.';
+                container.innerHTML = '<p class="col-span-full text-center font-mono text-gray-500">NO_DATA_FOUND</p>';
                 return;
             }
-            cards.forEach(card => {
+            cards.forEach((card, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-item glass-panel p-2 rounded border border-white/5 hover:border-accent/50 transition-all cursor-pointer group relative';
+                
+                const imgWrapper = document.createElement('div');
+                imgWrapper.className = 'img-cyberpunk-wrapper rounded overflow-hidden relative';
+
                 const img = document.createElement('img');
                 img.src = "/" + card.file_name
                 img.alt = card.name;
                 img.title = card.name;
-                img.classList.add('card-image');
+                img.className = 'img-cyberpunk w-full h-auto card-image';
+                
+                imgWrapper.appendChild(img);
+                wrapper.appendChild(imgWrapper);
+                container.appendChild(wrapper);
+
+                // Animation
+                if (window.gsap) {
+                    gsap.fromTo(wrapper, 
+                        { y: 20, opacity: 0 },
+                        { y: 0, opacity: 1, duration: 0.5, delay: index * 0.05 }
+                    );
+                }
+
                 if (isCommanderSelection) {
-                    img.addEventListener('click', () => handleCommanderSelection(card, img));
+                    wrapper.addEventListener('click', () => handleCommanderSelection(card, wrapper));
                 } else {
                     img.setAttribute('selected', 'false');
-                    img.addEventListener('click', () => {
-                        updateSelectedCount();
-                        if (n_selected_cards >= 30 && img.getAttribute('selected') === 'false') {
-                            return;
+                    wrapper.classList.add('card-unselected'); // Default state
+
+                    wrapper.addEventListener('click', () => {
+                        // Toggle selection logic
+                        const isSelected = img.getAttribute('selected') === 'true';
+                        
+                        if (!isSelected && n_selected_cards >= 30) {
+                            return; // Max limit reached
                         }
-                        img.setAttribute('selected', img.getAttribute('selected') === 'true' ? 'false' : 'true');
+
+                        if (isSelected) {
+                            img.setAttribute('selected', 'false');
+                            wrapper.classList.remove('card-selected');
+                            wrapper.classList.add('card-unselected');
+                        } else {
+                            img.setAttribute('selected', 'true');
+                            wrapper.classList.add('card-selected');
+                            wrapper.classList.remove('card-unselected');
+                        }
                         updateSelectedCount();
                     });
                 }
-                container.appendChild(img);
             });
         }
 
-        async function handleCommanderSelection(commander, imgElement) {
+        async function handleCommanderSelection(commander, wrapperElement) {
             if (selectedCommander) {
-                // If a commander is already selected, we can either allow re-selection or prevent it.
-                // Uncomment the next line to allow re-selection:
-                // return; 
-                
-                // If you want to prevent re-selection, just return here:
                 return;
             }
             selectedCommander = commander;
             console.log("Commander selected:", selectedCommander);
-            errorDiv.textContent = ''; // Clear previous errors
+            errorDiv.textContent = ''; 
 
             // Highlight selected commander
-            document.querySelectorAll('#commander-selection .card-image').forEach(el => el.classList.remove('selected-commander'));
-            imgElement.classList.add('selected-commander');
+            document.querySelectorAll('#commander-selection .card-item').forEach(el => {
+                el.classList.remove('selected-commander');
+                el.style.opacity = '0.3'; // Dim others
+            });
+            wrapperElement.classList.add('selected-commander');
+            wrapperElement.style.opacity = '1';
             
-            deckDisplayDiv.innerHTML = ''; // Clear previous deck
-            loadingDiv.textContent = 'Fetching deck cards...';
+            deckDisplayDiv.innerHTML = ''; 
             loadingDiv.style.display = 'block';
+            loadingDiv.textContent = '> COMPILING_DECK_MATRIX...';
 
             const colorIdentity = commander.color_identity;
             let deckQuery = '';
 
             if (!colorIdentity || colorIdentity.length === 0) {
-                // For a colorless commander, "any subset of that color identity" means only colorless cards.
-                // The query for colorless cards is typically 'ci:C' or 'is:colorless'.
                 deckQuery = 'ci:C';
             } else {
                 deckQuery = "ci:" + colorIdentity.join("");
@@ -142,7 +235,7 @@
         }
 
         async function initializePage() {
-            loadingDiv.textContent = 'Fetching commanders...';
+            loadingDiv.textContent = '> INITIALIZING_COMMANDER_LIST...';
             loadingDiv.style.display = 'block';
             errorDiv.textContent = '';
             commanderSelectionDiv.innerHTML = '';
@@ -152,11 +245,11 @@
                 const data = await fetchJson('/api/v1/random?q=' + encodeURIComponent('f:commander t:creature t:legendary') + '&count=5');
                 if (data.cards && data.cards.length > 0) {
                     displayCards(data.cards, commanderSelectionDiv, true);
-                } else if (data.card) { // Single card returned
+                } else if (data.card) { 
                     displayCards([data.card], commanderSelectionDiv, true);
                 }
                 else {
-                    errorDiv.textContent = 'No commanders found.';
+                    errorDiv.textContent = 'NO_COMMANDERS_FOUND';
                 }
             } catch (e) {
                 // Error already handled by fetchJson
@@ -166,7 +259,7 @@
 
         function copyDecklist() {
             if (!selectedCommander) {
-                alert("Please select a commander first.");
+                alert("ERROR: COMMANDER_NOT_SELECTED");
                 return;
             }
 
@@ -176,11 +269,11 @@
 
             navigator.clipboard.writeText(deckList)
                 .then(() => {
-                    alert("Decklist copied to clipboard!");
+                    alert("SUCCESS: DECKLIST_COPIED_TO_CLIPBOARD");
                 })
                 .catch(err => {
                     console.error('Failed to copy decklist:', err);
-                    alert("Failed to copy decklist. Please try again.");
+                    alert("ERROR: COPY_FAILED");
                 });
         }
         // Initialize the page on load

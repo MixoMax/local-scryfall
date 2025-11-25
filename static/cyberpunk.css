@@ -1,0 +1,168 @@
+/* Cyberpunk Design System - Core Styles */
+
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;700&display=swap');
+
+:root {
+    --bg-color: #050505;
+    --surface-color: #0a0a0a;
+    --accent-color: #00f3ff;
+    --accent-glow: rgba(0, 243, 255, 0.05);
+    --text-primary: #e0e0e0;
+    --text-muted: #9ca3af;
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+    cursor: none; /* Hide default cursor */
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Cursor */
+#cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--accent-color);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s, background-color 0.3s, opacity 0.3s;
+    mix-blend-mode: difference;
+}
+
+#cursor.hovered {
+    width: 50px;
+    height: 50px;
+    background-color: var(--accent-color);
+    opacity: 0.5;
+}
+
+/* Background Canvas */
+#bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.6;
+}
+
+/* Glass Panel Component */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    transition: border-color 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: rgba(0, 243, 255, 0.5);
+}
+
+/* Terminal Box Component */
+.terminal-box {
+    background-color: var(--surface-color);
+    border: 1px solid #333;
+    box-shadow: 0 0 20px var(--accent-glow);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color);
+}
+
+/* Utilities */
+.text-accent {
+    color: var(--accent-color);
+}
+
+.border-accent {
+    border-color: var(--accent-color);
+}
+
+.hover-trigger {
+    cursor: none; /* Ensure system cursor stays hidden */
+}
+
+/* Image Grayscale Hover Effect */
+.img-cyberpunk-wrapper {
+    overflow: hidden;
+    border-radius: 0.5rem;
+    position: relative;
+}
+
+.img-cyberpunk {
+    filter: grayscale(100%);
+    transition: filter 0.5s ease, transform 0.5s ease;
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.img-cyberpunk-wrapper:hover .img-cyberpunk {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+/* Navigation Links */
+.nav-link {
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+    position: relative;
+}
+
+.nav-link:hover {
+    color: var(--accent-color);
+}
+
+.nav-link::before {
+    content: '>';
+    position: absolute;
+    left: -15px;
+    opacity: 0;
+    color: var(--accent-color);
+    transition: opacity 0.3s ease, left 0.3s ease;
+}
+
+.nav-link:hover::before {
+    opacity: 1;
+    left: -12px;
+}

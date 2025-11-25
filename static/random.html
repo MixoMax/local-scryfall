@@ -3,46 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Random Access // TERMINAL</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#00f3ff',
+                        surface: '#0a0a0a',
+                        glass: 'rgba(255, 255, 255, 0.03)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        input[type="number"] {
-            width: 200px;
-            padding: 10px;
-            margin-right: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-        #result {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 2fr));
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        #result img {
-            width: 100%;
-            height: auto;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-    </style>
-
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/cyberpunk.css">
 </head>
-<body>
-    <input type="number" id="numberInput" placeholder="How many random cards?">
-    <button id="generateButton" onclick="generateRandomCards()">Generate Random Cards</button>
-    <div id="result"></div>
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
 
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
+                <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+            </h1>
+             <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
+                <a href="/" class="nav-link hover:text-accent transition-colors">Return_Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen flex flex-col items-center">
+        
+        <div class="glass-panel p-8 rounded-lg border border-white/5 mb-12 w-full max-w-lg text-center">
+            <h2 class="text-xl font-bold text-white font-sans uppercase tracking-tight mb-6">Random Data Generator</h2>
+            
+            <div class="flex flex-col md:flex-row gap-4 justify-center items-center">
+                <input type="number" id="numberInput" placeholder="QUANTITY" 
+                       class="bg-black/50 border border-white/10 p-3 text-sm font-mono text-accent focus:border-accent focus:outline-none transition-colors uppercase placeholder-gray-700 w-full md:w-auto text-center">
+                
+                <button id="generateButton" onclick="generateRandomCards()" 
+                        class="bg-white text-black font-mono uppercase text-sm px-6 py-3 hover:bg-accent transition-colors w-full md:w-auto font-bold tracking-wider">
+                    Execute
+                </button>
+            </div>
+        </div>
+
+        <div id="result" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 w-full">
+            <!-- Cards injected here -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+        <span>Sys.Status: ONLINE</span>
+        <span>Loc: /random_access</span>
+    </footer>
+
+    <script src="/cyberpunk.js"></script>
     <script>
         function generateRandomCards() {
             const numberInput = document.getElementById('numberInput');
@@ -50,26 +82,46 @@
             const numberOfCards = parseInt(numberInput.value, 10);
 
             if (isNaN(numberOfCards) || numberOfCards <= 0) {
-                resultDiv.innerHTML = 'Please enter a valid number greater than 0.';
+                resultDiv.innerHTML = '<p class="text-red-500 font-mono col-span-full text-center">ERROR: INVALID_INPUT</p>';
                 return;
             }
+
+            resultDiv.innerHTML = ''; // Clear previous results
 
             for (let i = 0; i < numberOfCards; i++) {
                 fetch("/api/v1/random")
                     .then(response => response.json())
                     .then(data => {
                         console.log(data);
+                        
+                        const cardItem = document.createElement('div');
+                        cardItem.className = 'card-item glass-panel p-3 rounded border border-white/5 hover:border-accent/50 transition-colors group relative';
+                        
+                        const imgWrapper = document.createElement('div');
+                        imgWrapper.className = 'img-cyberpunk-wrapper rounded overflow-hidden relative';
+
                         const card = document.createElement("img");
                         card.src = "/" + data.card.file_name;
-                        resultDiv.appendChild(card);
+                        card.className = 'img-cyberpunk w-full h-auto';
+                        
+                        imgWrapper.appendChild(card);
+                        cardItem.appendChild(imgWrapper);
+                        resultDiv.appendChild(cardItem);
+
+                        // Animate in
+                        if (window.gsap) {
+                            gsap.fromTo(cardItem, 
+                                { y: 20, opacity: 0 },
+                                { y: 0, opacity: 1, duration: 0.5, delay: i * 0.1 }
+                            );
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching random card:', error);
-                        resultDiv.innerHTML = 'Error fetching random cards. Please try again later.';
+                        resultDiv.innerHTML = '<p class="text-red-500 font-mono col-span-full text-center">SYSTEM_ERROR: FETCH_FAILED</p>';
                     });
             }
         }
-
     </script>
 </body>
 </html>

@@ -3,51 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Scryfall Clone</title>
-    <link rel="stylesheet" href="style.css">
+    <title>MyScryfall // TERMINAL</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#00f3ff',
+                        surface: '#0a0a0a',
+                        glass: 'rgba(255, 255, 255, 0.03)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/cyberpunk.css">
 </head>
-<body>
-    <header class="site-header">
-        <div class="logo-search-container">
-            <h1 class="site-title">MyScryfall</h1>
-            <div class="search-bar-wrapper">
-                <form id="searchForm" class="search-form">
-                    <input type="text" id="search" name="q" placeholder="Search for cards... e.g., o:vigilance t:creature">
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
+        <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <!-- Logo -->
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
+                    <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+                </h1>
+            </div>
+
+            <!-- Search -->
+            <div class="flex-grow max-w-2xl w-full">
+                <form id="searchForm" class="relative group">
+                    <input type="text" id="search" name="q" 
+                           class="w-full bg-black/50 border border-white/10 p-3 pl-4 text-sm font-mono text-accent focus:border-accent focus:outline-none transition-colors uppercase placeholder-gray-700"
+                           placeholder="SEARCH_DATABASE :: o:vigilance t:creature">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-accent rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
                 </form>
             </div>
-            <a href="/random" class="random-link">
-                <span class="random-text">Random Card</span>
-            </a>
-            <a href="/random-edh.html" class="random-link">
-                <span class="random-text">Random EDH Deck</span>
-            </a>
-            <a href="/draft" class="random-link">
-                <span class="random-text">Draft Simulator</span>
-            </a>
+
+            <!-- Nav -->
+            <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
+                <a href="/random" class="nav-link hover:text-accent transition-colors">Random_Card</a>
+                <a href="/random-edh.html" class="nav-link hover:text-accent transition-colors">EDH_Gen</a>
+                <a href="/draft" class="nav-link hover:text-accent transition-colors">Draft_Sim</a>
+            </nav>
         </div>
     </header>
 
-
-    <main>
-        <div id="query-stats" style="display: none;"></div>
-        <div class="stats-controls" style="display: none;">
-            <button id="toggleStatsBtn">Show Statistics</button>
-        </div>
-        <div id="statsContainer" class="stats-container" style="display: none;">
-            <div id="chartOptions" class="chart-options">
-                <!-- Checkboxes will be injected here -->
-            </div>
-            <div id="chartGrid" class="chart-grid">
-                <!-- Charts will be dynamically injected here -->
-            </div>
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen">
+        
+        <!-- Stats Section -->
+        <div id="query-stats" class="font-mono text-xs text-accent mb-4 hidden pl-1 border-l-2 border-accent"></div>
+        
+        <div class="stats-controls mb-6 hidden">
+            <button id="toggleStatsBtn" class="font-mono text-xs uppercase border border-accent/30 px-4 py-2 hover:bg-accent hover:text-black transition-colors">
+                Initialize_Statistics
+            </button>
         </div>
 
-        <div id="results" class="card-grid">
-            <!-- Cards will be injected here by JavaScript -->
+        <div id="statsContainer" class="terminal-box p-6 rounded-sm mb-12 hidden">
+            <div class="border-b border-gray-800 pb-4 mb-6">
+                <h3 class="text-accent font-mono text-sm mb-4">> DATA_VISUALIZATION_MODULE</h3>
+                <div id="chartOptions" class="flex flex-wrap gap-6 font-mono text-xs text-gray-500">
+                    <!-- Checkboxes injected here -->
+                </div>
+            </div>
+            <div id="chartGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Charts injected here -->
+            </div>
         </div>
+
+        <!-- Results Grid -->
+        <div id="results" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <!-- Cards injected here -->
+        </div>
+
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+        <span>Sys.Status: ONLINE</span>
+        <span>Loc: /home/linush</span>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/cyberpunk.js"></script>
+    
     <script>
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('search');
@@ -58,6 +115,13 @@
         const chartOptionsDiv = document.getElementById('chartOptions');
         const chartGridDiv = document.getElementById('chartGrid');
         const queryStatsDiv = document.getElementById('query-stats');
+
+        // --- Infinite Scroll State ---
+        let allCards = [];
+        let renderedCardCount = 0;
+        let scrollObserver = null;
+        let imageObserver = null;
+        const CARDS_PER_BATCH = 100;
 
         let charts = {}; // To hold chart instances
         const allChartTypes = {
@@ -71,12 +135,14 @@
 
         // --- Chart.js Global Configuration ---
         Chart.defaults.color = '#e0e0e0';
-        Chart.defaults.borderColor = '#4a4a4a';
+        Chart.defaults.borderColor = '#333';
+        Chart.defaults.font.family = '"JetBrains Mono", monospace';
         Chart.defaults.plugins.legend.position = 'top';
-        Chart.defaults.plugins.tooltip.backgroundColor = '#2d2d2d';
-        Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#0a0a0a';
+        Chart.defaults.plugins.tooltip.titleColor = '#00f3ff';
         Chart.defaults.plugins.tooltip.bodyColor = '#e0e0e0';
-
+        Chart.defaults.plugins.tooltip.borderColor = '#333';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
 
         // Function to get query parameter from URL
         function getQueryParam(param) {
@@ -95,17 +161,25 @@
                 queryStatsDiv.style.display = 'none';
             }
 
+            // Reset infinite scroll state
+            if (scrollObserver) {
+                scrollObserver.disconnect();
+                scrollObserver = null;
+            }
+            if (imageObserver) {
+                imageObserver.disconnect();
+                imageObserver = null;
+            }
+            allCards = [];
+            renderedCardCount = 0;
+
             if (!query) {
-                // Removed non-implemented UI feedback
                 return;
             }
 
             // Update URL with the search query
             const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
             history.pushState({ query }, '', newUrl);
-
-            // Removed non-implemented UI feedback
-
 
             const url = `/api/v1/search?q=${encodeURIComponent(query)}`;
 
@@ -122,7 +196,7 @@
 
                     if (data.cards && data.cards.length > 0) {
                         if (data.took_ms !== undefined) {
-                            queryStatsDiv.textContent = `${data.cards.length} Cards for query fetched in ${data.took_ms} ms`;
+                            queryStatsDiv.textContent = `> ${data.cards.length} ENTITIES RETRIEVED IN ${data.took_ms}ms`;
                             queryStatsDiv.style.display = 'block';
                         }
 
@@ -133,7 +207,6 @@
                             generateStats(data.cards);
                         }
 
-
                         // Create and observe intersection observer for lazy loading
                         const imageObserver = new IntersectionObserver((entries, observer) => {
                             entries.forEach(entry => {
@@ -142,39 +215,54 @@
                                     img.src = img.dataset.src;
                                     observer.unobserve(img);
                                 }
-                });
-            });
+                            });
+                        });
 
-            data.cards.forEach((card, index) => {
-                const cardItem = document.createElement('div');
-                cardItem.className = 'card-item';
+                        data.cards.forEach((card, index) => {
+                            const cardItem = document.createElement('div');
+                            // Cyberpunk styling for card container
+                            cardItem.className = 'card-item glass-panel p-3 rounded border border-white/5 hover:border-accent/50 transition-colors group relative';
 
-                const cardImg = document.createElement('img');
-                cardImg.alt = card.name;
-                cardImg.title = card.name;
-                
-                // First 8 cards load immediately, rest are lazy loaded
-                if (index < 8) {
-                    cardImg.src = `/${card.file_name}`;
-                } else {
-                    cardImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
-                    cardImg.dataset.src = `/${card.file_name}`;
-                    imageObserver.observe(cardImg);
-                }
+                            const cardLink = document.createElement('a');
+                            cardLink.href = `/card/${encodeURIComponent(card.safe_name)}`;
+                            cardLink.className = 'block';
 
-                const cardLink = document.createElement('a');
-                cardLink.href = `/card/${encodeURIComponent(card.safe_name)}`;
-                cardLink.appendChild(cardImg);
-                cardItem.appendChild(cardLink);
-                resultsDiv.appendChild(cardItem);
-            });
+                            const imgWrapper = document.createElement('div');
+                            imgWrapper.className = 'img-cyberpunk-wrapper overflow-hidden rounded relative';
+
+                            const cardImg = document.createElement('img');
+                            cardImg.alt = card.name;
+                            cardImg.title = card.name;
+                            cardImg.className = 'img-cyberpunk w-full h-auto';
+                            
+                            // First 8 cards load immediately, rest are lazy loaded
+                            if (index < 8) {
+                                cardImg.src = `/${card.file_name}`;
+                            } else {
+                                cardImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
+                                cardImg.dataset.src = `/${card.file_name}`;
+                                imageObserver.observe(cardImg);
+                            }
+
+                            imgWrapper.appendChild(cardImg);
+                            cardLink.appendChild(imgWrapper);
+                            cardItem.appendChild(cardLink);
+                            resultsDiv.appendChild(cardItem);
+                        });
+                        
+                        // Re-init hover effects for new elements
+                        if (window.initCursor) {
+                            // This might be handled by the MutationObserver in cyberpunk.js, 
+                            // but explicit call doesn't hurt if exposed.
+                        }
+
                     } else {
-                        resultsDiv.innerHTML = '<p class="no-results">No cards found.</p>';
+                        resultsDiv.innerHTML = '<p class="no-results font-mono text-gray-500 col-span-full text-center py-12">NO_DATA_FOUND</p>';
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching cards:', error);
-                    resultsDiv.innerHTML = '<p class="error-message">Error fetching cards. Check console for details.</p>';
+                    resultsDiv.innerHTML = '<p class="error-message font-mono text-red-500 col-span-full text-center py-12">SYSTEM_ERROR: FETCH_FAILED</p>';
                     clearStats();
                 });
         }
@@ -188,7 +276,7 @@
             if (fullClear) {
                 statsControls.style.display = 'none';
                 statsContainer.style.display = 'none';
-                toggleStatsBtn.textContent = 'Show Statistics';
+                toggleStatsBtn.textContent = 'Initialize_Statistics';
             }
         }
 
@@ -231,7 +319,7 @@
                     const canvasId = `${key}Chart`;
                     
                     const wrapper = document.createElement('div');
-                    wrapper.className = 'chart-wrapper';
+                    wrapper.className = 'chart-wrapper bg-black/40 p-4 rounded border border-white/5';
                     if (config.type === 'pie') {
                         wrapper.classList.add('pie-chart-wrapper');
                     }
@@ -271,8 +359,8 @@
                 datasets: [{
                     label: data.label,
                     data: sortedKeys.map(key => counts[key]),
-                    backgroundColor: 'rgba(138, 180, 248, 0.6)',
-                    borderColor: 'rgba(138, 180, 248, 1)',
+                    backgroundColor: 'rgba(0, 243, 255, 0.2)',
+                    borderColor: '#00f3ff',
                     borderWidth: 1
                 }]
             };
@@ -285,12 +373,12 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: title },
+                        title: { display: true, text: title.toUpperCase(), color: '#9ca3af', font: { family: 'Space Grotesk' } },
                         legend: { display: false }
                     },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#383838' } },
-                        x: { grid: { color: '#383838' } }
+                        y: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } },
+                        x: { grid: { color: '#333' }, ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } }
                     }
                 }
             });
@@ -309,6 +397,8 @@
                     label: data.label,
                     data: Object.values(counts),
                     backgroundColor: Object.keys(counts).map(c => colorMap[c] || '#808080'),
+                    borderColor: '#0a0a0a',
+                    borderWidth: 2,
                     hoverOffset: 4
                 }]
             };
@@ -321,7 +411,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: title }
+                        title: { display: true, text: title.toUpperCase(), color: '#9ca3af', font: { family: 'Space Grotesk' } },
+                        legend: { labels: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } }
                     }
                 }
             });
@@ -330,12 +421,10 @@
         toggleStatsBtn.addEventListener('click', () => {
             const isHidden = statsContainer.style.display === 'none';
             statsContainer.style.display = isHidden ? 'block' : 'none';
-            toggleStatsBtn.textContent = isHidden ? 'Hide Statistics' : 'Show Statistics';
+            toggleStatsBtn.textContent = isHidden ? 'Terminate_Statistics' : 'Initialize_Statistics';
 
             // If we are showing the stats, and there are results, generate the charts
             if (isHidden && resultsDiv.querySelector('.card-item')) {
-                // We need to re-fetch the data to generate stats, as we don't store it globally
-                // A better approach might store the last search result, but this is simpler for now.
                 const query = getQueryParam('q');
                 if (query) {
                     fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
@@ -351,14 +440,17 @@
 
         function setupChartOptions() {
             const preferences = getChartPreferences();
-            chartOptionsDiv.innerHTML = '<span>Chart Options:</span>';
+            chartOptionsDiv.innerHTML = '<span class="text-accent mr-4">METRICS:</span>';
 
             for (const [key, config] of Object.entries(allChartTypes)) {
                 const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 cursor-pointer hover:text-white transition-colors';
+                
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `check-${key}`;
                 checkbox.checked = preferences[key] || false;
+                checkbox.className = 'accent-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2';
 
                 checkbox.addEventListener('change', () => {
                     const currentPrefs = getChartPreferences();

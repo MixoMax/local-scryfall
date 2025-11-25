@@ -3,22 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-    <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/card_style.css">
+    <title>Card Detail // TERMINAL</title>
+    
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#00f3ff',
+                        surface: '#0a0a0a',
+                        glass: 'rgba(255, 255, 255, 0.03)'
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/cyberpunk.css">
 </head>
-<body>
-    <header class="site-header">
-        <div class="logo-search-container">
-            <h1 class="site-title"><a href="/">MyScryfall</a></h1>
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
+                <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+            </h1>
+             <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
+                <a href="/" class="nav-link hover:text-accent transition-colors">Return_Home</a>
+            </nav>
         </div>
     </header>
-    <main>
-        <div id="card-container" class="single-card-page-content">
+
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen flex justify-center">
+        <div id="card-container" class="w-full max-w-4xl">
             <!-- Card details injected here -->
         </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+        <span>Sys.Status: ONLINE</span>
+        <span>Loc: /card_detail</span>
+    </footer>
+
+    <script src="/cyberpunk.js"></script>
     <script>
         const cardName = "[CARD_NAME]"; // will be server side injected
 
@@ -27,35 +67,57 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
-                        document.getElementById('card-container').innerHTML = `<h1>Error: ${data.error}</h1>`;
+                        document.getElementById('card-container').innerHTML = `<h1 class="text-red-500 font-mono text-xl">ERROR: ${data.error}</h1>`;
                         return;
                     }
 
                     const card = data.card;
-                    document.title = card.name;
+                    document.title = card.name + " // TERMINAL";
 
                     const cardHtml = `
-                        <div class="card-item">
-                            <div class="card-image-container">
-                                <img src="/${card.file_name}" alt="${card.name}" title="${card.name}">
+                        <div class="card-item glass-panel p-8 rounded-lg border border-white/5 flex flex-col md:flex-row gap-8 items-start">
+                            <div class="w-full md:w-1/3 flex-shrink-0">
+                                <div class="img-cyberpunk-wrapper rounded-lg overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(0,243,255,0.1)]">
+                                    <img src="/${card.file_name}" alt="${card.name}" title="${card.name}" class="img-cyberpunk w-full h-auto">
+                                </div>
                             </div>
-                            <div class="card-details">
-                                <h2>${card.name}</h2>
-                                <p><strong>Mana Cost:</strong> ${card.mana_cost || "N/A"}</p>
-                                <p><strong>CMC:</strong> ${card.cmc || "N/A"}</p>
-                                <p><strong>Type:</strong> ${card.type_line || "N/A"}</p>
-                                <p><strong>Text:</strong> ${card.oracle_text || "N/A"}</p>
-                                <p><strong>Power:</strong> ${card.power || "N/A"}</p>
-                                <p><strong>Toughness:</strong> ${card.toughness || "N/A"}</p>
-                                <p><strong>Loyalty:</strong> ${card.loyalty || "N/A"}</p>
+                            <div class="card-details flex-grow font-mono text-sm space-y-4">
+                                <h2 class="text-3xl font-bold text-white font-sans uppercase tracking-tight border-b border-white/10 pb-4 mb-6">
+                                    ${card.name}
+                                </h2>
+                                
+                                <div class="grid grid-cols-1 gap-2 text-gray-400">
+                                    <p><strong class="text-accent">MANA_COST:</strong> <span class="text-white">${card.mana_cost || "N/A"}</span></p>
+                                    <p><strong class="text-accent">CMC:</strong> <span class="text-white">${card.cmc || "N/A"}</span></p>
+                                    <p><strong class="text-accent">TYPE:</strong> <span class="text-white">${card.type_line || "N/A"}</span></p>
+                                    
+                                    <div class="my-4 p-4 bg-black/30 border-l-2 border-accent rounded-r">
+                                        <strong class="text-accent block mb-2 text-xs">ORACLE_TEXT:</strong>
+                                        <p class="text-white whitespace-pre-wrap leading-relaxed">${card.oracle_text || "N/A"}</p>
+                                    </div>
+
+                                    <div class="flex gap-8 mt-2">
+                                        <p><strong class="text-accent">PWR:</strong> <span class="text-white">${card.power || "N/A"}</span></p>
+                                        <p><strong class="text-accent">TGH:</strong> <span class="text-white">${card.toughness || "N/A"}</span></p>
+                                        <p><strong class="text-accent">LOYALTY:</strong> <span class="text-white">${card.loyalty || "N/A"}</span></p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
                     document.getElementById('card-container').innerHTML = cardHtml;
+                    
+                    // Re-init animations for the new content
+                    if (window.gsap && window.ScrollTrigger) {
+                        gsap.fromTo(".card-item", 
+                            { y: 50, opacity: 0 },
+                            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
+                        );
+                    }
                 })
                 .catch(err => {
                     console.error('Error fetching card:', err);
-                    document.getElementById('card-container').innerHTML = '<p class="error-message">An error occurred loading the card.</p>';
+                    document.getElementById('card-container').innerHTML = '<p class="text-red-500 font-mono">SYSTEM_ERROR: LOAD_FAILED</p>';
                 });
         }
 
