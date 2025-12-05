@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyScryfall // TERMINAL</title>
+    <title>MyScryfall // QUERY_CONSTRUCTOR</title>
     
     <!-- External Libs -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,27 +13,82 @@
                 extend: {
                     colors: {
                         accent: '#00f3ff',
+                        'accent-dim': 'rgba(0, 243, 255, 0.1)',
+                        'accent-dark': 'rgba(0, 243, 255, 0.05)',
                         surface: '#0a0a0a',
-                        glass: 'rgba(255, 255, 255, 0.03)'
+                        glass: 'rgba(255, 255, 255, 0.03)',
+                        success: '#00ff9d',
+                        warning: '#ffb86c',
+                        danger: '#ff2a6d'
                     },
                     fontFamily: {
                         mono: ['JetBrains Mono', 'monospace'],
                         sans: ['Space Grotesk', 'sans-serif']
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                        'scan': 'scan 2s linear infinite',
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        },
+                        scan: {
+                            '0%': { backgroundPosition: '0% 0%' },
+                            '100%': { backgroundPosition: '200% 0%' }
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Custom Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* UI Specifics */
+        .builder-grid {
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        
+        select option {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 10px;
+        }
+
+        .chip-enter {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Scanline button effect */
+        .btn-scan {
+            background: linear-gradient(90deg, transparent, rgba(0,243,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: scan 3s infinite linear;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(10px);
+        }
+    </style>
     <link rel="stylesheet" href="/cyberpunk.css">
 </head>
-<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden">
+<body class="bg-[#050505] text-gray-300 min-h-screen selection:bg-accent selection:text-black overflow-x-hidden font-sans">
 
     <!-- Header -->
     <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5 backdrop-blur-md">
@@ -41,456 +96,602 @@
             
             <!-- Logo -->
             <div class="flex items-center gap-4">
-                <h1 class="text-2xl font-bold tracking-tighter uppercase text-white">
-                    <a href="/">MyScryfall</a> <span class="text-accent text-xs align-top font-mono">v2.0</span>
+                <h1 class="text-2xl font-bold tracking-tighter uppercase text-white cursor-pointer group" onclick="resetSearch()">
+                    MyScryfall <span class="text-accent text-xs align-top font-mono group-hover:animate-pulse">v2.0</span>
                 </h1>
             </div>
 
-            <!-- Search -->
-            <div class="flex-grow max-w-2xl w-full">
-                <form id="searchForm" class="relative group">
-                    <input type="text" id="search" name="q" 
-                           class="w-full bg-black/50 border border-white/10 p-3 pl-4 text-sm font-mono text-accent focus:border-accent focus:outline-none transition-colors uppercase placeholder-gray-700"
-                           placeholder="SEARCH_DATABASE :: o:vigilance t:creature">
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-accent rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+            <!-- Top Search Input -->
+            <div class="flex-grow max-w-xl w-full hidden md:block opacity-70 hover:opacity-100 transition-opacity">
+                <form id="topSearchForm" class="relative group">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-accent font-mono text-xs opacity-70">></div>
+                    <input type="text" id="topSearchInput" name="q" 
+                           class="w-full bg-black/50 border border-white/10 p-2 pl-8 text-xs font-mono text-accent focus:border-accent focus:outline-none transition-colors uppercase placeholder-gray-700"
+                           placeholder="RAW_SYNTAX_BUFFER..." autocomplete="off">
                 </form>
             </div>
 
             <!-- Nav -->
-            <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest">
-                <a href="/random" class="nav-link hover:text-accent transition-colors">Random_Card</a>
-                <a href="/random-edh.html" class="nav-link hover:text-accent transition-colors">EDH_Gen</a>
-                <a href="/draft" class="nav-link hover:text-accent transition-colors">Draft_Sim</a>
+            <nav class="flex gap-6 text-xs font-mono uppercase tracking-widest hidden md:flex">
+                <a href="#" class="nav-link text-accent">Query_Builder</a>
+                <a href="draft.html" class="nav-link text-gray-600 hover:text-white transition-colors">Draft_Lobbies</a>
+                <a href="random-edh.html" class="nav-link text-gray-600 hover:text-white transition-colors">EDH_Generator</a>
             </nav>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen">
+    <main class="container mx-auto px-6 pt-32 pb-20 relative z-10 min-h-screen flex flex-col items-center">
         
-        <!-- Stats Section -->
-        <div id="query-stats" class="font-mono text-xs text-accent mb-4 hidden pl-1 border-l-2 border-accent"></div>
-        
-        <div class="stats-controls mb-6 hidden">
-            <button id="toggleStatsBtn" class="font-mono text-xs uppercase border border-accent/30 px-4 py-2 hover:bg-accent hover:text-black transition-colors">
-                Initialize_Statistics
-            </button>
-        </div>
+        <!-- === QUERY BUILDER HERO SECTION === -->
+        <div id="hero-section" class="w-full max-w-4xl mx-auto mt-4 transition-all duration-500">
+            
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-2 tracking-tight">Database Interface</h2>
+                <p class="text-gray-500 font-mono text-sm max-w-lg mx-auto">Construct complex queries using the visual builder below, or initialize a simulation to test system response.</p>
+                
+                <button onclick="runDemo()" class="mt-4 text-xs font-mono text-accent border border-accent/30 px-4 py-2 rounded hover:bg-accent/10 transition-colors">
+                    ▶ RUN_LIVE_DEMO (Izzet Spells)
+                </button>
+            </div>
 
-        <div id="statsContainer" class="terminal-box p-6 rounded-sm mb-12 hidden">
-            <div class="border-b border-gray-800 pb-4 mb-6">
-                <h3 class="text-accent font-mono text-sm mb-4">> DATA_VISUALIZATION_MODULE</h3>
-                <div id="chartOptions" class="flex flex-wrap gap-6 font-mono text-xs text-gray-500">
-                    <!-- Checkboxes injected here -->
+            <!-- The Builder Interface -->
+            <div class="glass-panel border border-white/10 rounded-xl overflow-hidden builder-grid shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
+                
+                <!-- 1. Active Chips Display -->
+                <div class="p-8 min-h-[140px] bg-black/40 relative flex flex-col justify-center">
+                    <div class="absolute top-3 left-4 text-[10px] font-mono text-gray-600 uppercase tracking-widest">Active Filters (Stack)</div>
+                    
+                    <div id="builder-canvas" class="flex flex-wrap items-center gap-3">
+                        <div id="empty-state-msg" class="w-full text-center border-2 border-dashed border-white/5 rounded-lg py-6">
+                            <p class="font-mono text-sm text-gray-500">
+                                <span class="text-accent animate-pulse">●</span> System Idle. Add a filter below to begin.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Input Controls -->
+                <div class="border-t border-white/10 bg-[#0c0c0c] p-6">
+                    
+                    <div class="mb-3 text-xs font-mono text-accent uppercase tracking-wider flex items-center gap-2">
+                        <div class="w-2 h-2 bg-accent rounded-full"></div>
+                        Construct New Filter
+                    </div>
+
+                    <div class="flex flex-col lg:flex-row gap-4 items-end">
+                        
+                        <!-- Logic Selector -->
+                        <div id="logic-selector-container" class="w-full lg:w-32 hidden">
+                            <label class="text-[10px] text-gray-500 font-mono uppercase block mb-1">Relationship</label>
+                            <select id="input-logic" class="w-full bg-white/5 border border-white/10 text-white font-sans text-sm py-3 px-3 rounded focus:border-accent outline-none">
+                                <option value="AND">AND (Also)</option>
+                                <option value="OR">OR (Either)</option>
+                                <option value="NOT">NOT (Exclude)</option>
+                            </select>
+                        </div>
+
+                        <!-- Field Selection -->
+                        <div class="w-full lg:w-1/4">
+                            <label class="text-[10px] text-gray-500 font-mono uppercase block mb-1">Target Property</label>
+                            <select id="input-field" class="w-full bg-black border border-white/10 text-white font-sans text-sm py-3 px-3 rounded focus:border-accent outline-none">
+                                <option value="name">Card Name</option>
+                                <option value="type_line">Card Type (Creature, etc)</option>
+                                <option value="oracle_text">Rules Text</option>
+                                <option value="colors">Colors</option>
+                                <option value="cmc">Mana Cost (CMC)</option>
+                                <option value="power">Power</option>
+                                <option value="toughness">Toughness</option>
+                                <option value="set">Expansion Set</option>
+                            </select>
+                        </div>
+
+                        <!-- Operator Selection -->
+                        <div class="w-full lg:w-1/5">
+                            <label class="text-[10px] text-gray-500 font-mono uppercase block mb-1">Condition</label>
+                            <select id="input-op" class="w-full bg-black border border-white/10 text-gray-400 font-sans text-sm py-3 px-3 rounded focus:border-accent outline-none">
+                                <option value=":">Contains / Is</option>
+                                <option value="=">Exactly Is</option>
+                                <option value=">">Is Greater Than</option>
+                                <option value="<">Is Less Than</option>
+                            </select>
+                        </div>
+
+                        <!-- Value Input -->
+                        <div class="flex-grow w-full">
+                            <label class="text-[10px] text-gray-500 font-mono uppercase block mb-1">Value</label>
+                            <input type="text" id="input-value" 
+                                   class="w-full bg-black border border-white/10 text-white font-sans text-sm py-3 px-3 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none placeholder-gray-700"
+                                   placeholder="e.g. Dragon, Fire, 4...">
+                        </div>
+
+                        <!-- Add Button -->
+                        <button onclick="addBuilderParam()" class="w-full lg:w-auto bg-white/5 hover:bg-white/10 text-white border border-white/10 font-mono text-xs font-bold py-3 px-6 rounded transition-all duration-200 uppercase tracking-wider whitespace-nowrap">
+                            + Add Filter
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div id="chartGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Charts injected here -->
-            </div>
-        </div>
 
-        <!-- Results Grid -->
-        <div id="results" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            <!-- Cards injected here -->
+            <!-- 3. Execute Button -->
+            <div class="mt-8 flex justify-center perspective-1000">
+                <button onclick="triggerSearch()" class="group relative w-full md:w-2/3 bg-accent text-black font-bold text-lg py-5 rounded-lg overflow-hidden transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(0,243,255,0.4)] clip-path-polygon">
+                    <div class="absolute inset-0 btn-scan opacity-30 pointer-events-none"></div>
+                    <div class="relative flex items-center justify-center gap-3">
+                        <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <span class="font-mono tracking-widest">INITIALIZE SCAN</span>
+                    </div>
+                    <!-- Decorative Corners -->
+                    <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-black/50"></div>
+                    <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-black/50"></div>
+                </button>
+            </div>
+            
+        </div>
+        <!-- END BUILDER HERO SECTION -->
+
+        <!-- Results Area -->
+        <div id="results-container" class="w-full max-w-7xl mt-8">
+            
+            <div id="statsControls" class="hidden mb-6 flex justify-between items-center border-b border-white/10 pb-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="resetSearch()" class="text-xs font-mono text-gray-500 hover:text-white flex items-center gap-2 transition-colors">
+                        ← RETURN_TO_BUILDER
+                    </button>
+                    <div class="h-4 w-px bg-white/10"></div>
+                    <div id="query-stats" class="font-mono text-xs text-accent"></div>
+                </div>
+                
+                <button id="toggleStatsBtn" class="font-mono text-xs uppercase border border-accent/30 px-3 py-1 hover:bg-accent hover:text-black transition-colors rounded-sm text-accent">
+                    Toggle_Analytics
+                </button>
+            </div>
+
+            <div id="statsContainer" class="glass-panel p-6 rounded-lg mb-8 hidden border border-white/10">
+                <div id="chartGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Charts injected here -->
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div id="results" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 min-h-[100px]">
+                <!-- Cards injected here -->
+            </div>
         </div>
 
     </main>
 
     <!-- Footer -->
-    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/80 backdrop-blur-sm border-t border-white/5">
+    <footer class="fixed bottom-0 w-full py-2 px-6 text-[10px] font-mono text-gray-700 uppercase flex justify-between pointer-events-none z-40 bg-black/90 backdrop-blur-sm border-t border-white/5">
         <span>Sys.Status: ONLINE</span>
-        <span>Loc: /home/linush</span>
+        <span class="hidden md:inline">Portfolio Project v2.0 // Interactive Builder</span>
+        <span>Loc: /home/guest</span>
     </footer>
 
-    <!-- Scripts -->
-    <script src="/cyberpunk.js"></script>
-    
     <script>
-        const searchForm = document.getElementById('searchForm');
-        const searchInput = document.getElementById('search');
+        // --- CORE VARIABLES ---
+        const topSearchForm = document.getElementById('topSearchForm');
+        const topSearchInput = document.getElementById('topSearchInput');
+        
         const resultsDiv = document.getElementById('results');
-        const statsControls = document.querySelector('.stats-controls');
+        const heroSection = document.getElementById('hero-section');
+        const builderCanvas = document.getElementById('builder-canvas');
+        const emptyStateMsg = document.getElementById('empty-state-msg');
+        
+        // Builder Inputs
+        const inputField = document.getElementById('input-field');
+        const inputOp = document.getElementById('input-op');
+        const inputValue = document.getElementById('input-value');
+        const inputLogic = document.getElementById('input-logic');
+        const logicContainer = document.getElementById('logic-selector-container');
+
+        // Stats Refs
         const toggleStatsBtn = document.getElementById('toggleStatsBtn');
         const statsContainer = document.getElementById('statsContainer');
-        const chartOptionsDiv = document.getElementById('chartOptions');
         const chartGridDiv = document.getElementById('chartGrid');
         const queryStatsDiv = document.getElementById('query-stats');
+        const statsControls = document.getElementById('statsControls');
 
-        // --- Infinite Scroll State ---
-        let allCards = [];
-        let renderedCardCount = 0;
-        let scrollObserver = null;
-        let imageObserver = null;
-        const CARDS_PER_BATCH = 100;
-
-        let charts = {}; // To hold chart instances
-        const allChartTypes = {
-            cmc: { label: 'CMC', type: 'bar' },
-            power: { label: 'Power', type: 'bar' },
-            toughness: { label: 'Toughness', type: 'bar' },
-            loyalty: { label: 'Loyalty', type: 'bar' },
-            colors: { label: 'Colors', type: 'pie' },
-            color_identity: { label: 'Color Identity', type: 'pie' }
-        };
-
-        // --- Chart.js Global Configuration ---
-        Chart.defaults.color = '#e0e0e0';
-        Chart.defaults.borderColor = '#333';
-        Chart.defaults.font.family = '"JetBrains Mono", monospace';
-        Chart.defaults.plugins.legend.position = 'top';
-        Chart.defaults.plugins.tooltip.backgroundColor = '#0a0a0a';
-        Chart.defaults.plugins.tooltip.titleColor = '#00f3ff';
-        Chart.defaults.plugins.tooltip.bodyColor = '#e0e0e0';
-        Chart.defaults.plugins.tooltip.borderColor = '#333';
-        Chart.defaults.plugins.tooltip.borderWidth = 1;
-
-        // Function to get query parameter from URL
-        function getQueryParam(param) {
+        // State
+        let queryParams = [];
+        let charts = {};
+        
+        // --- INIT & URL HANDLING ---
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check for URL params on load
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
-
-        function searchCards(event) {
-            if (event) {
-                event.preventDefault();
+            const query = urlParams.get('q');
+            
+            if (query) {
+                // If URL param exists, fill top bar and trigger search directly
+                topSearchInput.value = query;
+                triggerSearch(query);
             }
+        });
 
-            const query = searchInput.value.trim();
-            resultsDiv.innerHTML = '';
-            if (queryStatsDiv) {
-                queryStatsDiv.style.display = 'none';
+        // Handle Back/Forward browser buttons
+        window.addEventListener('popstate', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            if (query) {
+                topSearchInput.value = query;
+                triggerSearch(query, false); // false = don't push state again
+            } else {
+                resetSearch();
             }
+        });
 
-            // Reset infinite scroll state
-            if (scrollObserver) {
-                scrollObserver.disconnect();
-                scrollObserver = null;
-            }
-            if (imageObserver) {
-                imageObserver.disconnect();
-                imageObserver = null;
-            }
-            allCards = [];
-            renderedCardCount = 0;
+        // Handle Top Search Bar Submit
+        topSearchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = topSearchInput.value.trim();
+            if(query) triggerSearch(query);
+        });
 
-            if (!query) {
+        // --- QUERY BUILDER LOGIC ---
+
+        function updateBuilderUI() {
+            builderCanvas.innerHTML = '';
+            
+            if (queryParams.length === 0) {
+                builderCanvas.appendChild(emptyStateMsg);
+                logicContainer.classList.add('hidden');
+                topSearchInput.value = '';
                 return;
             }
 
-            // Update URL with the search query
-            const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
-            history.pushState({ query }, '', newUrl);
+            // Show logic selector for subsequent additions
+            logicContainer.classList.remove('hidden');
 
-            const url = `/api/v1/search?q=${encodeURIComponent(query)}`;
+            let queryStr = "";
 
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
+            queryParams.forEach((param, index) => {
+                // 1. Build the String for the backend
+                if (index > 0) {
+                    if (param.logic === 'NOT') queryStr += " -"; 
+                    else queryStr += ` ${param.logic} `;
+                } else {
+                    if (param.logic === 'NOT') queryStr += "-";
+                }
+
+                const fieldMap = {
+                    'type_line': 't', 'oracle_text': 'o', 'colors': 'c', 
+                    'color_identity': 'id', 'legal_formats': 'f', 'set': 's'
+                };
+                const code = fieldMap[param.field] || param.field;
+                let safeValue = param.value;
+                if (safeValue.includes(' ')) safeValue = `"${safeValue}"`;
+                queryStr += `${code}${param.op}${safeValue}`;
+
+                // 2. Render the Friendly Chip
+                const chip = document.createElement('div');
+                chip.className = 'chip-enter flex items-stretch bg-[#111] border border-white/10 rounded overflow-hidden group hover:border-accent transition-colors shadow-lg';
+                
+                // Logic Label
+                if (index > 0 || param.logic === 'NOT') {
+                     const logicDisplay = param.logic === 'NOT' ? 'EXCLUDE' : param.logic;
+                     const logicColor = param.logic === 'NOT' ? 'text-red-400' : 'text-gray-500';
+                     const logicDiv = document.createElement('div');
+                     logicDiv.className = `bg-white/5 px-3 py-2 text-[10px] font-bold font-mono ${logicColor} flex items-center border-r border-white/5`;
+                     logicDiv.innerText = logicDisplay;
+                     chip.appendChild(logicDiv);
+                }
+
+                // Friendly Content
+                const fieldLabelMap = {
+                    'name': 'Name', 'type_line': 'Type', 'oracle_text': 'Text',
+                    'colors': 'Color', 'cmc': 'Cost', 'power': 'Power'
+                };
+                const opLabelMap = { ':': 'contains', '=': 'is', '>': '>', '<': '<' };
+                
+                const displayField = fieldLabelMap[param.field] || param.field;
+                const displayOp = opLabelMap[param.op] || param.op;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'px-3 py-2 text-xs font-mono flex items-center gap-2';
+                contentDiv.innerHTML = `<span class="text-gray-500">${displayField}</span> <span class="text-accent/70">${displayOp}</span> <span class="text-white font-bold border-b border-accent/20">${param.value}</span>`;
+                chip.appendChild(contentDiv);
+
+                // Delete Button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'bg-red-500/0 hover:bg-red-500/20 text-gray-600 hover:text-red-400 px-3 flex items-center transition-colors border-l border-white/5';
+                delBtn.innerHTML = '×';
+                delBtn.onclick = () => removeParam(index);
+                chip.appendChild(delBtn);
+
+                builderCanvas.appendChild(chip);
+            });
+
+            // Sync the invisible string buffer to the top search bar (so it submits correctly)
+            topSearchInput.value = queryStr;
+        }
+
+        function addBuilderParam() {
+            const val = inputValue.value.trim();
+            if (!val) {
+                inputValue.classList.add('ring-2', 'ring-red-500');
+                setTimeout(() => inputValue.classList.remove('ring-2', 'ring-red-500'), 500);
+                return;
+            }
+
+            const newParam = {
+                logic: queryParams.length === 0 ? (inputLogic.value === 'NOT' ? 'NOT' : '') : inputLogic.value,
+                field: inputField.value,
+                op: inputOp.value,
+                value: val
+            };
+
+            queryParams.push(newParam);
+            inputValue.value = ''; // clear input
+            updateBuilderUI();
+        }
+
+        function removeParam(index) {
+            queryParams.splice(index, 1);
+            updateBuilderUI();
+        }
+
+        // --- DEMO / QUICK START ---
+        function runDemo() {
+            resetSearch();
+            
+            // Programmatically build a cool query (Izzet Spells)
+            // 1. Colors: UR
+            setTimeout(() => {
+                queryParams.push({ logic: '', field: 'colors', op: ':', value: 'UR' });
+                updateBuilderUI();
+            }, 100);
+            
+            // 2. Type: Instant
+            setTimeout(() => {
+                queryParams.push({ logic: 'AND', field: 'type_line', op: ':', value: 'Instant' });
+                updateBuilderUI();
+            }, 400);
+
+            // 3. Execute Real Search
+            setTimeout(() => {
+                triggerSearch();
+            }, 900);
+        }
+
+        function resetSearch() {
+            queryParams = [];
+            topSearchInput.value = '';
+            resultsDiv.innerHTML = '';
+            statsControls.classList.add('hidden');
+            statsContainer.classList.add('hidden');
+            
+            // Show Hero
+            heroSection.style.display = 'block';
+            setTimeout(() => {
+                heroSection.style.opacity = '1';
+                heroSection.style.transform = 'translateY(0)';
+            }, 10);
+            
+            updateBuilderUI();
+            
+            // Clear URL
+            const url = new URL(window.location);
+            url.searchParams.delete('q');
+            window.history.pushState({}, '', url);
+        }
+
+        // Allow Enter key in builder input
+        inputValue.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addBuilderParam();
+            }
+        });
+
+        // --- SEARCH EXECUTION ---
+
+        function triggerSearch(forcedQuery = null, updateUrl = true) {
+            // Priority: Forced string -> Input Value
+            const query = forcedQuery || topSearchInput.value.trim();
+            
+            if (!query) return;
+
+            // Update URL State
+            if (updateUrl) {
+                const url = new URL(window.location);
+                url.searchParams.set('q', query);
+                window.history.pushState({ query }, '', url);
+            }
+
+            // UI Transitions: Fade out hero
+            heroSection.style.opacity = '0';
+            heroSection.style.transform = 'scale(0.95)';
+            setTimeout(() => { heroSection.style.display = 'none'; }, 300);
+
+            // Loading State
+            resultsDiv.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-32">
+                    <div class="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-6"></div>
+                    <div class="text-accent font-mono animate-pulse text-xl">CONTACTING BACKEND...</div>
+                    <div class="text-xs text-gray-600 font-mono mt-2">Query: [${query}]</div>
+                </div>
+            `;
+            
+            statsControls.classList.add('hidden');
+            statsContainer.classList.add('hidden');
+
+            // Real Fetch
+            fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
+                .then(res => {
+                    if(!res.ok) throw new Error(res.status);
+                    return res.json();
                 })
                 .then(data => {
-                    // First, clear old stats and hide container
-                    clearStats();
-
-                    if (data.cards && data.cards.length > 0) {
-                        if (data.took_ms !== undefined) {
-                            queryStatsDiv.textContent = `> ${data.cards.length} ENTITIES RETRIEVED IN ${data.took_ms}ms`;
-                            queryStatsDiv.style.display = 'block';
-                        }
-
-                        // Show stats button and generate charts
-                        statsControls.style.display = 'block';
-                        // Only generate stats if the container is already visible
-                        if (statsContainer.style.display !== 'none') {
-                            generateStats(data.cards);
-                        }
-
-                        // Create and observe intersection observer for lazy loading
-                        const imageObserver = new IntersectionObserver((entries, observer) => {
-                            entries.forEach(entry => {
-                                if (entry.isIntersecting) {
-                                    const img = entry.target;
-                                    img.src = img.dataset.src;
-                                    observer.unobserve(img);
-                                }
-                            });
-                        });
-
-                        data.cards.forEach((card, index) => {
-                            const cardItem = document.createElement('div');
-                            // Cyberpunk styling for card container
-                            cardItem.className = 'card-item glass-panel p-3 rounded border border-white/5 hover:border-accent/50 transition-colors group relative';
-
-                            const cardLink = document.createElement('a');
-                            cardLink.href = `/card/${encodeURIComponent(card.safe_name)}`;
-                            cardLink.className = 'block';
-
-                            const imgWrapper = document.createElement('div');
-                            imgWrapper.className = 'img-cyberpunk-wrapper overflow-hidden rounded relative';
-
-                            const cardImg = document.createElement('img');
-                            cardImg.alt = card.name;
-                            cardImg.title = card.name;
-                            cardImg.className = 'img-cyberpunk w-full h-auto';
-                            
-                            // First 8 cards load immediately, rest are lazy loaded
-                            if (index < 8) {
-                                cardImg.src = `/${card.file_name}`;
-                            } else {
-                                cardImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // Transparent placeholder
-                                cardImg.dataset.src = `/${card.file_name}`;
-                                imageObserver.observe(cardImg);
-                            }
-
-                            imgWrapper.appendChild(cardImg);
-                            cardLink.appendChild(imgWrapper);
-                            cardItem.appendChild(cardLink);
-                            resultsDiv.appendChild(cardItem);
-                        });
-                        
-                        // Re-init hover effects for new elements
-                        if (window.initCursor) {
-                            // This might be handled by the MutationObserver in cyberpunk.js, 
-                            // but explicit call doesn't hurt if exposed.
-                        }
-
-                    } else {
-                        resultsDiv.innerHTML = '<p class="no-results font-mono text-gray-500 col-span-full text-center py-12">NO_DATA_FOUND</p>';
-                    }
+                    renderResults(data);
                 })
-                .catch(error => {
-                    console.error('Error fetching cards:', error);
-                    resultsDiv.innerHTML = '<p class="error-message font-mono text-red-500 col-span-full text-center py-12">SYSTEM_ERROR: FETCH_FAILED</p>';
-                    clearStats();
+                .catch(err => {
+                    console.error(err);
+                    resultsDiv.innerHTML = `
+                        <div class="col-span-full text-center py-12 text-red-500 font-mono border border-red-500/20 bg-red-500/5 rounded">
+                            <h3 class="text-xl">SYSTEM_ERROR</h3>
+                            <p>Connection to database failed. Please verify API is running.</p>
+                            <button onclick="window.location.reload()" class="mt-4 underline text-sm">Reload Interface</button>
+                        </div>
+                    `;
                 });
         }
 
-        function clearStats(fullClear = true) {
-            // Destroy all previous chart instances
-            Object.values(charts).forEach(chart => chart.destroy());
-            charts = {};
-            chartGridDiv.innerHTML = ''; // Clear the grid
+        function renderResults(data) {
+            resultsDiv.innerHTML = ''; 
 
-            if (fullClear) {
-                statsControls.style.display = 'none';
-                statsContainer.style.display = 'none';
-                toggleStatsBtn.textContent = 'Initialize_Statistics';
+            if (data.cards && data.cards.length > 0) {
+                // Stats Header
+                if (data.took_ms !== undefined) {
+                    queryStatsDiv.innerHTML = `> QUERY_COMPLETE: <span class="text-white">${data.cards.length}</span> RESULTS IN <span class="text-white">${data.took_ms}ms</span>`;
+                }
+                
+                statsControls.classList.remove('hidden');
+
+                data.cards.forEach((card, index) => {
+                    const delay = Math.min(index * 50, 800);
+                    // Use safe_name for the URL, fallback to name
+                    const linkUrl = `/card/${encodeURIComponent(card.safe_name || card.name)}`;
+                    
+                    const cardHTML = `
+                        <div class="glass-panel p-2 rounded-lg border border-white/5 hover:border-accent/50 transition-all duration-300 group relative hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(0,243,255,0.15)] opacity-0 animate-fade-in" style="animation-fill-mode: forwards; animation-delay: ${delay}ms;">
+                            <a href="${linkUrl}" class="block relative">
+                                <div class="overflow-hidden rounded relative bg-[#151515] aspect-[2.5/3.5]">
+                                    <img 
+                                        alt="${card.name}" 
+                                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        src="${card.file_name}"
+                                        loading="lazy"
+                                    >
+                                    <!-- Scanline Overlay -->
+                                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style="background-size: 100% 3px;"></div>
+                                </div>
+                                <div class="mt-3 px-1">
+                                    <div class="text-[10px] font-mono text-gray-500 mb-1 flex justify-between">
+                                        <span>${card.type_line ? card.type_line.split('—')[0] : 'Card'}</span>
+                                        <span class="text-accent">${card.cmc !== null ? 'CMC:'+card.cmc : ''}</span>
+                                    </div>
+                                    <div class="text-xs font-bold text-gray-200 truncate group-hover:text-accent transition-colors uppercase tracking-tight">
+                                        ${card.name}
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    `;
+                    resultsDiv.insertAdjacentHTML('beforeend', cardHTML);
+                });
+
+                // Save for analytics
+                window.lastSearchResult = data.cards;
+
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="col-span-full text-center py-20 border border-white/5 bg-white/5 rounded">
+                        <h3 class="text-xl font-mono text-white mb-2">NO_DATA_FOUND</h3>
+                        <p class="text-xs text-gray-500 font-mono">QUERY YIELDED 0 RESULTS. ADJUST PARAMETERS.</p>
+                        <button onclick="resetSearch()" class="mt-4 text-accent border border-accent px-4 py-2 rounded text-xs hover:bg-accent hover:text-black transition-colors">MODIFY SEARCH</button>
+                    </div>`;
             }
         }
 
-        function getChartPreferences() {
-            const savedPrefs = localStorage.getItem('chartPreferences');
-            if (savedPrefs) {
-                return JSON.parse(savedPrefs);
+        // --- STATS & CHARTS ---
+        
+        toggleStatsBtn.addEventListener('click', () => {
+            const isHidden = statsContainer.classList.contains('hidden');
+            if (isHidden) {
+                statsContainer.classList.remove('hidden');
+                console.log('Generating stats for', window.lastSearchResult);
+                if (window.lastSearchResult) generateStats(window.lastSearchResult);
+                toggleStatsBtn.classList.add('bg-accent', 'text-black');
+            } else {
+                statsContainer.classList.add('hidden');
+                toggleStatsBtn.classList.remove('bg-accent', 'text-black');
             }
-            // Default preferences
-            return {
-                cmc: true,
-                power: false,
-                toughness: false,
-                loyalty: false,
-                colors: true,
-                color_identity: true
-            };
-        }
-
-        function saveChartPreferences(prefs) {
-            localStorage.setItem('chartPreferences', JSON.stringify(prefs));
-        }
-
+        });
 
         function generateStats(cards) {
-            clearStats(false); // Clear previous charts without hiding the container
-            const preferences = getChartPreferences();
+            chartGridDiv.innerHTML = ''; // Clear old charts
+            
+            // 1. Color Pie
+            const colors = cards.flatMap(c => c.colors && c.colors.length ? c.colors : ['Colorless']);
+            createChart('colorsChart', 'pie', 'Color Distribution', colors);
 
-            const cardData = {
-                cmc: cards.map(c => c.cmc),
-                power: cards.map(c => c.power).filter(p => p !== null),
-                toughness: cards.map(c => c.toughness).filter(t => t !== null),
-                loyalty: cards.map(c => c.loyalty).filter(l => l !== null),
-                colors: cards.flatMap(c => c.colors || ['C']),
-                color_identity: cards.flatMap(c => c.color_identity || ['C'])
-            };
-
-            for (const [key, config] of Object.entries(allChartTypes)) {
-                if (preferences[key] && cardData[key].length > 0) {
-                    const canvasId = `${key}Chart`;
-                    
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'chart-wrapper bg-black/40 p-4 rounded border border-white/5';
-                    if (config.type === 'pie') {
-                        wrapper.classList.add('pie-chart-wrapper');
-                    }
-
-                    const canvas = document.createElement('canvas');
-                    canvas.id = canvasId;
-                    wrapper.appendChild(canvas);
-                    chartGridDiv.appendChild(wrapper);
-
-                    const chartTitle = `${config.label} Distribution`;
-                    const dataPayload = { label: config.label, data: cardData[key] };
-
-                    if (config.type === 'bar') {
-                        charts[canvasId] = createBarChart(canvasId, chartTitle, dataPayload);
-                    } else if (config.type === 'pie') {
-                        charts[canvasId] = createPieChart(canvasId, chartTitle, dataPayload);
-                    }
-                }
-            }
+            // 2. CMC Bar
+            const cmcs = cards.map(c => Math.min(c.cmc || 0, 8)); // Cap at 8+
+            createChart('cmcChart', 'bar', 'Mana Curve', cmcs);
         }
 
-        function createBarChart(canvasId, title, data) {
-            const counts = data.data.reduce((acc, val) => {
-                acc[val] = (acc[val] || 0) + 1;
-                return acc;
-            }, {});
+        function createChart(id, type, label, rawData) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bg-black/40 p-4 rounded border border-white/5 h-64 relative';
+            const canvas = document.createElement('canvas');
+            wrapper.appendChild(canvas);
+            chartGridDiv.appendChild(wrapper);
 
-            const sortedKeys = Object.keys(counts).sort((a, b) => {
-                // Handle 'X' and other non-numeric values
-                const numA = isNaN(a) ? -1 : parseFloat(a);
-                const numB = isNaN(b) ? -1 : parseFloat(b);
-                return numA - numB;
+            const counts = rawData.reduce((acc, v) => { acc[v] = (acc[v]||0)+1; return acc; }, {});
+            const labels = Object.keys(counts).sort();
+            const data = labels.map(k => counts[k]);
+            
+            const accentColor = '#00f3ff';
+            const colors = labels.map(l => {
+                if (type === 'pie') {
+                    switch(l) {
+                        case 'W': return '#f8f8f8';
+                        case 'U': return '#3b82f6';
+                        case 'B': return '#1f2937';
+                        case 'R': return '#ef4444';
+                        case 'G': return '#10b981';
+                        case 'Colorless': return '#9ca3af';
+                        default: return accentColor;
+                    }
+                } else {
+                    return accentColor;
+                }
             });
+            
 
-            const chartData = {
-                labels: sortedKeys,
-                datasets: [{
-                    label: data.label,
-                    data: sortedKeys.map(key => counts[key]),
-                    backgroundColor: 'rgba(0, 243, 255, 0.2)',
-                    borderColor: '#00f3ff',
-                    borderWidth: 1
-                }]
-            };
-
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            return new Chart(ctx, {
-                type: 'bar',
-                data: chartData,
+            new Chart(canvas, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: type === 'bar' ? accentColor : '#111',
+                        borderWidth: 1
+                    }]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: { display: true, text: title.toUpperCase(), color: '#9ca3af', font: { family: 'Space Grotesk' } },
-                        legend: { display: false }
+                        legend: { display: type === 'pie', position: 'right', labels: { color: '#888', font: { family: 'JetBrains Mono', size: 10 } } },
+                        title: { display: true, text: label.toUpperCase(), color: '#00f3ff', font: { family: 'Space Grotesk' } }
                     },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } },
-                        x: { grid: { color: '#333' }, ticks: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } }
+                    scales: type === 'bar' ? {
+                        y: { grid: { color: '#333' }, ticks: { color: '#888' } },
+                        x: { grid: { display: false }, ticks: { color: '#888' } }
+                    } : {
+                        x: { display: false }, y: { display: false }
                     }
                 }
             });
         }
 
-        function createPieChart(canvasId, title, data) {
-            const colorMap = { 'W': '#F8F6D8', 'U': '#C1D7E9', 'B': '#ABA29F', 'R': '#E8B3A4', 'G': '#BDE3C0', 'C': '#CCCCCC' };
-            const counts = data.data.reduce((acc, val) => {
-                acc[val] = (acc[val] || 0) + 1;
-                return acc;
-            }, {});
+        // Custom CSS Animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        `;
+        document.head.appendChild(style);
 
-            const chartData = {
-                labels: Object.keys(counts),
-                datasets: [{
-                    label: data.label,
-                    data: Object.values(counts),
-                    backgroundColor: Object.keys(counts).map(c => colorMap[c] || '#808080'),
-                    borderColor: '#0a0a0a',
-                    borderWidth: 2,
-                    hoverOffset: 4
-                }]
-            };
-
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            return new Chart(ctx, {
-                type: 'pie',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: true, text: title.toUpperCase(), color: '#9ca3af', font: { family: 'Space Grotesk' } },
-                        legend: { labels: { color: '#9ca3af', font: { family: 'JetBrains Mono' } } }
-                    }
-                }
-            });
-        }
-
-        toggleStatsBtn.addEventListener('click', () => {
-            const isHidden = statsContainer.style.display === 'none';
-            statsContainer.style.display = isHidden ? 'block' : 'none';
-            toggleStatsBtn.textContent = isHidden ? 'Terminate_Statistics' : 'Initialize_Statistics';
-
-            // If we are showing the stats, and there are results, generate the charts
-            if (isHidden && resultsDiv.querySelector('.card-item')) {
-                const query = getQueryParam('q');
-                if (query) {
-                    fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.cards && data.cards.length > 0) {
-                                generateStats(data.cards);
-                            }
-                        });
-                }
-            }
-        });
-
-        function setupChartOptions() {
-            const preferences = getChartPreferences();
-            chartOptionsDiv.innerHTML = '<span class="text-accent mr-4">METRICS:</span>';
-
-            for (const [key, config] of Object.entries(allChartTypes)) {
-                const label = document.createElement('label');
-                label.className = 'flex items-center gap-2 cursor-pointer hover:text-white transition-colors';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `check-${key}`;
-                checkbox.checked = preferences[key] || false;
-                checkbox.className = 'accent-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2';
-
-                checkbox.addEventListener('change', () => {
-                    const currentPrefs = getChartPreferences();
-                    currentPrefs[key] = checkbox.checked;
-                    saveChartPreferences(currentPrefs);
-
-                    // If stats are visible, regenerate them
-                    if (statsContainer.style.display !== 'none' && resultsDiv.querySelector('.card-item')) {
-                         const query = getQueryParam('q');
-                        if (query) {
-                             fetch(`/api/v1/search?q=${encodeURIComponent(query)}`)
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.cards && data.cards.length > 0) {
-                                        generateStats(data.cards);
-                                    }
-                                });
-                        }
-                    }
-                });
-
-                label.appendChild(checkbox);
-                label.append(` ${config.label}`);
-                chartOptionsDiv.appendChild(label);
-            }
-        }
-
-
-        searchForm.addEventListener('submit', searchCards);
-
-        // Check for query parameter on page load
-        window.addEventListener('load', () => {
-            setupChartOptions();
-            const query = getQueryParam('q');
-            if (query) {
-                searchInput.value = query;
-                searchCards();
-            }
-        });
+        // Initial sync of empty builder state
+        updateBuilderUI();
 
     </script>
+    <script src="/cyberpunk.js"></script>
 </body>
 </html>
